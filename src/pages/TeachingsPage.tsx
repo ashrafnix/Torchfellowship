@@ -1,0 +1,80 @@
+import React, { useRef } from 'react';
+import { Teaching } from '../types.ts';
+import Spinner from '../components/ui/Spinner.tsx';
+import useOnScreen from '../hooks/useOnScreen.ts';
+import { useQuery } from '@tanstack/react-query';
+import { useApi } from '../hooks/useApi.ts';
+
+const TeachingsPage: React.FC = () => {
+  const { apiClient } = useApi();
+  const { data: teachings = [], isLoading } = useQuery<Teaching[]>({
+    queryKey: ['teachings'],
+    queryFn: () => apiClient('/api/teachings', 'GET'),
+  });
+
+  return (
+    <div className="animate-fadeInUp">
+      <section className="relative py-32 text-center overflow-hidden bg-brand-dark">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url('https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273135/Teachings_kkvbhd.png')` }}
+        >
+            <div className="absolute inset-0 bg-brand-dark/70 backdrop-blur-sm"></div>
+        </div>
+        <div className="container mx-auto px-4 relative z-10">
+          <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold">
+            Our Teachings
+          </h1>
+          <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-brand-text-dark">
+            Immerse yourself in transformative messages that inspire, challenge, and build up your faith.
+          </p>
+        </div>
+      </section>
+
+      <div className="py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          {isLoading ? (
+            <div className="flex justify-center"><Spinner /></div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {teachings.map(teaching => (
+                <TeachingCard key={teaching._id} teaching={teaching} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TeachingCard: React.FC<{ teaching: Teaching }> = ({ teaching }) => {
+    const videoId = teaching.youtube_url.split('v=')[1]?.split('&')[0] || teaching.youtube_url.split('/').pop();
+    const ref = useRef<HTMLDivElement>(null);
+    const isVisible = useOnScreen(ref, { threshold: 0.1 });
+
+    return (
+        <div 
+            ref={ref} 
+            className={`bg-brand-surface rounded-lg shadow-2xl overflow-hidden group transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+        >
+            <div className="relative pb-[56.25%] bg-black overflow-hidden">
+                <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} alt={teaching.title} className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10"></div>
+                <a href={teaching.youtube_url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="w-16 h-16 rounded-full bg-red-600/80 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path></svg>
+                   </div>
+                </a>
+            </div>
+            <div className="p-6">
+                <p className="text-sm text-brand-gold font-semibold">{teaching.category}</p>
+                <h3 className="text-xl font-bold font-serif mt-2 text-white">{teaching.title}</h3>
+                <p className="text-brand-text-dark mt-1 text-sm">{teaching.speaker} • {new Date(teaching.preached_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p className="text-brand-text-dark mt-3 text-sm h-20 overflow-hidden text-ellipsis">{teaching.description}</p>
+            </div>
+        </div>
+    );
+};
+
+export default TeachingsPage;

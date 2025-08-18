@@ -1,0 +1,5 @@
+{
+  "name": "Torch Fellowship",
+  "description": "A comprehensive, mobile-first responsive application for managing Torch Fellowship's community. Features include teachings, events, prayer requests, and a dynamic content management system. The app is powered by a MongoDB backend with JWT authentication and includes an AI assistant using the Gemini API.",
+  "requestFramePermissions": []
+}
