@@ -37,47 +37,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://esm.sh/react-toastify@10.0.5/dist/ReactToastify.min.css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'brand-dark': '#0A0A0A',
-              'brand-surface': '#141417',
-              'brand-muted': '#2B2F36',
-              'brand-gold': {
-                DEFAULT: '#E0B841',
-                dark: '#C8A33A'
-              },
-              'brand-text': {
-                DEFAULT: '#EAEAEA',
-                dark: '#A0A0A0'
-              },
-              'brand-light': '#F0EAD6',
-            },
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              serif: ['Playfair Display', 'serif'],
-            },
-            animation: {
-              aurora: 'aurora 60s linear infinite',
-              fadeInUp: 'fadeInUp 0.8s ease-out forwards',
-            },
-            keyframes: {
-              aurora: {
-                from: { backgroundPosition: '50% 50%, 50% 50%' },
-                to: { backgroundPosition: '350% 50%, 350% 50%' },
-              },
-              fadeInUp: {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
-              },
-            }
-          }
-        }
-      }
-    </script>
+
 <style>
   .noise-overlay {
     position: fixed;
@@ -139,6 +99,5 @@
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/index.tsx"></script>
-  <script type="module" src="/index.tsx"></script>
 </body>
 </html>

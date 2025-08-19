@@ -1,50 +1,62 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import AppError from '../utils/AppError.js';
 
-if (!process.env.GEMINI_API_KEY) {
-    console.warn("GEMINI_API_KEY environment variable not set for Gemini. AI features will fail.");
-}
+let genAI = null;
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getGenAI = () => {
+    if (!genAI && process.env.GEMINI_API_KEY) {
+        try {
+            genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            console.log('✅ GoogleGenAI initialized successfully');
+        } catch (error) {
+            console.error('❌ Failed to initialize GoogleGenAI:', error.message);
+        }
+    }
+    return genAI;
+};
 
 export const streamChat = async (req, res, next) => {
-    if (!process.env.GEMINI_API_KEY) {
+    const aiClient = getGenAI();
+    if (!aiClient) {
         return next(new AppError('AI service is not configured on the server.', 503));
     }
 
     try {
         const { history, newMessage } = req.body;
 
-        if (!Array.isArray(history) || !newMessage) {
-            return next(new AppError('Invalid request body. `history` array and `newMessage` string are required.', 400));
+        if (!Array.isArray(history) || typeof newMessage !== 'string') {
+            return next(new AppError('Invalid request body. `history` must be an array and `newMessage` must be a string.', 400));
         }
-        
+
+        const model = aiClient.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            systemInstruction: "You are a sophisticated AI assistant for the Torch Fellowship community, a vibrant Christian group in Mutundwe, Uganda. Your purpose is to help users with their spiritual questions, provide information about the fellowship's events and teachings, and offer encouragement. Be warm, empathetic, and align your responses with Christian values. Do not answer questions outside of this scope.",
+        });
+
         const contents = [
             ...history,
             { role: 'user', parts: [{ text: newMessage }] }
         ];
 
-        const result = await ai.models.generateContentStream({
-            model: "gemini-2.5-flash",
-            contents: contents,
-            config: {
-                systemInstruction: `You are a sophisticated AI assistant for the Torch Fellowship community.`,
-            }
-        });
+        const result = await model.generateContentStream({ contents });
 
-        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Transfer-Encoding', 'chunked');
-        
-        for await (const chunk of result) {
-            res.write(chunk.text);
+
+        for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            if (chunkText) {
+                res.write(chunkText);
+            }
         }
-        
+
         res.end();
 
     } catch (error) {
         console.error("Error in AI stream chat:", error);
         if (!res.headersSent) {
-            next(new AppError('Failed to get response from AI service.', 500));
+            const errorMessage = error.message || 'An unexpected error occurred while communicating with the AI service.';
+            next(new AppError(errorMessage, 500));
         } else {
             res.end();
         }

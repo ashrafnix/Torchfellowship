@@ -2,16 +2,10 @@ import { getApiUrl } from '../config/api';
 
 export const getAIResponseStream = async (history: any, newMessage: string): Promise<ReadableStream<Uint8Array> | null> => {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            throw new Error("Authentication token not found.");
-        }
-
         const response = await fetch(getApiUrl('/api/ai/chat'), {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({ history, newMessage }),
         });

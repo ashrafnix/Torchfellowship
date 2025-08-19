@@ -19,17 +19,19 @@ export const getPublicCampuses = async (req, res, next) => {
 export const applyForCampus = async (req, res, next) => {
     try {
         const db = getDb();
-        const { name, location, description } = req.body;
+        const { proposedCampusName, proposedLocation, missionStatement, proposedLeaderName, contactInfo } = req.body;
         const user = req.user;
 
-        if (!name || !location || !description) {
-            return next(new AppError('Name, location, and description are required.', 400));
+        if (!proposedCampusName || !proposedLocation || !missionStatement) {
+            return next(new AppError('Campus name, location, and mission statement are required.', 400));
         }
 
         const newApplication = {
-            name,
-            location,
-            description,
+            name: proposedCampusName,
+            location: proposedLocation,
+            description: missionStatement,
+            proposedLeaderName,
+            contactInfo,
             userId: user._id.toHexString(),
             userName: user.fullName || user.email,
             status: 'Pending',

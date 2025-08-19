@@ -27,7 +27,7 @@ const ManageCampuses: React.FC = () => {
 
     const { data: applications = [], isLoading: isLoadingApps } = useQuery<LightCampusApplication[]>({
         queryKey: ['lightCampusApplications', 'admin'],
-        queryFn: () => apiClient('/api/light-campuses/applications', 'GET')
+        queryFn: () => apiClient('/api/light-campuses/admin/applications', 'GET')
     });
 
     const saveCampusMutation = useMutation({
@@ -55,7 +55,7 @@ const ManageCampuses: React.FC = () => {
 
     const appActionMutation = useMutation({
         mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) => 
-            apiClient(`/api/light-campuses/applications/${id}/${action}`, 'PUT'),
+            apiClient(`/api/light-campuses/admin/applications/${id}/${action}`, 'PUT'),
         onSuccess: (_, { action }) => {
             toast.success(`Application ${action}d.`);
             queryClient.invalidateQueries({ queryKey: ['lightCampusApplications', 'admin'] });

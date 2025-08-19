@@ -5,6 +5,7 @@
 // This MUST be the very first thing to run so that all other files/modules
 // have access to the environment variables.
 // -----------------------------------------------------------------------------
+import path from 'path';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 
@@ -13,10 +14,14 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
+// Debug: Check if environment variables are loaded
+console.log('Environment variables loaded:');
+console.log('- GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'Set' : 'Not set');
+console.log('- MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not set');
+
 // -----------------------------------------------------------------------------
 // Module Imports (Now that .env is loaded)
 // -----------------------------------------------------------------------------
-import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

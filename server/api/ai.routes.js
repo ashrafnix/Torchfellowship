@@ -5,6 +5,6 @@ import { authMiddleware } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.post('/chat', authMiddleware, streamChat);
+router.post('/chat', streamChat);
 
 export default router;
