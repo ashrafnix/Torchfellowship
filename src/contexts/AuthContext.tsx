@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, UserRole } from '../types';
 import Spinner from '../components/ui/Spinner';
+import { getApiUrl } from '../config/api';
 
 interface AuthContextType {
   user: User | null;
@@ -27,7 +28,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setToken(storedToken);
       try {
         // Fetch user data from the dedicated profile endpoint
-        const res = await fetch('/api/profile/me', {
+        const res = await fetch(getApiUrl('/api/profile/me'), {
           headers: {
             'Authorization': `Bearer ${storedToken}`
           }
@@ -59,7 +60,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [loadUserFromToken]);
 
   const login = async (email: string, password: string) => {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(getApiUrl('/api/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

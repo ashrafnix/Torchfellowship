@@ -1,16 +1,46 @@
-import React, { useRef } from 'react';
-import { Teaching } from '../types.ts';
-import Spinner from '../components/ui/Spinner.tsx';
-import useOnScreen from '../hooks/useOnScreen.ts';
+import React, { useState, useRef } from 'react';
+import { Teaching } from '../types';
+import Spinner from '../components/ui/Spinner';
+import useOnScreen from '../hooks/useOnScreen';
 import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
+import Modal from '../components/ui/Modal';
+
+const getYouTubeVideoId = (url: string): string | null => {
+    let videoId: string | null = null;
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname === 'youtu.be') {
+            videoId = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes('youtube.com')) {
+            videoId = urlObj.searchParams.get('v');
+        }
+    } catch (e) {
+        const match = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=|embed\/|v\/|)([\w-]{11})(?:\S+)?/);
+        videoId = match ? match[1] : null;
+    }
+    return videoId;
+};
 
 const TeachingsPage: React.FC = () => {
   const { apiClient } = useApi();
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const { data: teachings = [], isLoading } = useQuery<Teaching[]>({
     queryKey: ['teachings'],
     queryFn: () => apiClient('/api/teachings', 'GET'),
   });
+
+  const handleOpenVideoModal = (youtubeUrl: string) => {
+    const videoId = getYouTubeVideoId(youtubeUrl);
+    if (videoId) {
+      setSelectedVideoUrl(`https://www.youtube.com/embed/${videoId}`);
+      setIsModalOpen(true);
+    } else {
+      alert("Invalid YouTube URL provided for this teaching.");
+    }
+  };
 
   return (
     <div className="animate-fadeInUp">
@@ -38,20 +68,33 @@ const TeachingsPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {teachings.map(teaching => (
-                <TeachingCard key={teaching._id} teaching={teaching} />
+                <TeachingCard key={teaching._id} teaching={teaching} onPlayVideo={() => handleOpenVideoModal(teaching.youtube_url)} />
               ))}
             </div>
           )}
         </div>
       </div>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Watch Teaching">
+        <div className="aspect-video bg-black rounded-lg">
+          <iframe
+            width="100%"
+            height="100%"
+            src={selectedVideoUrl}
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          ></iframe>
+        </div>
+      </Modal>
     </div>
   );
 };
 
-const TeachingCard: React.FC<{ teaching: Teaching }> = ({ teaching }) => {
-    const videoId = teaching.youtube_url.split('v=')[1]?.split('&')[0] || teaching.youtube_url.split('/').pop();
+const TeachingCard: React.FC<{ teaching: Teaching, onPlayVideo: () => void }> = ({ teaching, onPlayVideo }) => {
+    const videoId = getYouTubeVideoId(teaching.youtube_url);
     const ref = useRef<HTMLDivElement>(null);
-    const isVisible = useOnScreen(ref, { threshold: 0.1 });
+    const isVisible = useOnScreen(ref as React.RefObject<Element>, { threshold: 0.1 });
 
     return (
         <div 
@@ -61,11 +104,11 @@ const TeachingCard: React.FC<{ teaching: Teaching }> = ({ teaching }) => {
             <div className="relative pb-[56.25%] bg-black overflow-hidden">
                 <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} alt={teaching.title} className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10"></div>
-                <a href={teaching.youtube_url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={onPlayVideo} className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" title="Play Video">
                    <div className="w-16 h-16 rounded-full bg-red-600/80 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path></svg>
                    </div>
-                </a>
+                </button>
             </div>
             <div className="p-6">
                 <p className="text-sm text-brand-gold font-semibold">{teaching.category}</p>

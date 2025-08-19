@@ -1,3 +1,4 @@
+import { getApiUrl } from '../config/api';
 
 export const uploadImage = async (file: File, folder: string): Promise<string> => {
   const token = localStorage.getItem('token');
@@ -6,7 +7,7 @@ export const uploadImage = async (file: File, folder: string): Promise<string> =
   }
 
   // Step 1: Get signature from our backend
-  const signatureResponse = await fetch('/api/cloudinary/signature', {
+  const signatureResponse = await fetch(getApiUrl('/api/cloudinary/signature'), {
     method: 'POST',
     headers: { 
       'Content-Type': 'application/json',

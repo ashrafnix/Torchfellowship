@@ -1,11 +1,9 @@
-
 import bcrypt from 'bcryptjs';
-import * as jwt from 'jsonwebtoken';
-import { getDb } from '../db/index.js';
+import jwt from 'jsonwebtoken';
+import { getDb } from '../server.js';
 import AppError from '../utils/AppError.js';
 import { UserRole } from '../utils/constants.js';
 import { formatUserForClient } from '../utils/userFormatter.js';
-
 
 export const register = async (req, res, next) => {
     try {
@@ -26,13 +24,12 @@ export const register = async (req, res, next) => {
             fullName,
             email: email.toLowerCase(),
             password: hashedPassword,
-            role: UserRole.USER, // Default role for new users
+            role: UserRole.USER,
             avatarUrl: null,
             createdAt: new Date().toISOString()
         };
 
         const result = await db.collection('users').insertOne(newUser);
-        
         const userForClient = { ...newUser, _id: result.insertedId };
 
         const expiresIn = process.env.JWT_EXPIRES_IN || '90d';

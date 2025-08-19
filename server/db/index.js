@@ -3,7 +3,7 @@ import { MongoClient } from 'mongodb';
 import bcrypt from 'bcryptjs';
 import { UserRole } from '../utils/constants.js';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.DB_NAME || 'torch-fellowship';
 
 let db;
@@ -48,17 +48,27 @@ export const connectToDatabase = async () => {
         return db;
     }
     try {
+        console.log(`🔌 Attempting to connect to MongoDB`);
+        console.log(`📊 Database name: ${DB_NAME}`);
+        console.log(`🔗 Connection string length: ${MONGODB_URI ? MONGODB_URI.length : 'undefined'}`);
+        
+        if (!MONGODB_URI) {
+            throw new Error('MONGODB_URI is undefined - environment variables not loaded properly');
+        }
+        
         const client = new MongoClient(MONGODB_URI);
         await client.connect();
         db = client.db(DB_NAME);
-        console.log('Successfully connected to MongoDB.');
+        console.log('✅ Successfully connected to MongoDB.');
         
         await seedSuperAdmin();
         await createIndexes();
 
         return db;
     } catch (error) {
-        console.error('Could not connect to MongoDB', error);
+        console.error('❌ Could not connect to MongoDB:', error.message);
+        console.error('Full error:', error);
+        throw error;
     }
 };
 

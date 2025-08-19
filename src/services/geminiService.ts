@@ -1,3 +1,4 @@
+import { getApiUrl } from '../config/api';
 
 export const getAIResponseStream = async (history: any, newMessage: string): Promise<ReadableStream<Uint8Array> | null> => {
     try {
@@ -6,7 +7,7 @@ export const getAIResponseStream = async (history: any, newMessage: string): Pro
             throw new Error("Authentication token not found.");
         }
 
-        const response = await fetch('/api/ai/chat', {
+        const response = await fetch(getApiUrl('/api/ai/chat'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

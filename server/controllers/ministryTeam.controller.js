@@ -1,5 +1,4 @@
-
-import { getDb } from '../db/index.js';
+import { getDb } from '../server.js';
 import { ObjectId } from 'mongodb';
 import AppError from '../utils/AppError.js';
 
@@ -12,7 +11,6 @@ const formatMinistryTeamForClient = (team) => {
     };
 };
 
-// --- PUBLIC ---
 export const getPublicMinistryTeams = async (req, res, next) => {
     try {
         const db = getDb();
@@ -25,33 +23,33 @@ export const getPublicMinistryTeams = async (req, res, next) => {
         next(new AppError('Failed to fetch ministry teams.', 500));
     }
 };
-
-// --- ADMIN ---
 export const getAllMinistryTeams = async (req, res, next) => {
     try {
         const db = getDb();
-        const teams = await db.collection('ministry_teams').find({}).sort({ name: 1 }).toArray();
+        const teams = await db.collection('ministry_teams')
+            .find({})
+            .sort({ name: 1 })
+            .toArray();
         res.status(200).json(teams.map(formatMinistryTeamForClient));
     } catch (error) {
-        next(new AppError('Failed to fetch ministry teams for admin.', 500));
+        next(new AppError('Failed to fetch all ministry teams.', 500));
     }
 };
 
 export const createMinistryTeam = async (req, res, next) => {
     try {
-        const { name, description, leaderName, contactEmail, imageUrl, isActive } = req.body;
-        if (!name || !description || !leaderName || !contactEmail || !imageUrl) {
-            return next(new AppError('All fields including image are required.', 400));
+        const db = getDb();
+        const { name, description, photoUrl } = req.body;
+
+        if (!name || !description || !photoUrl) {
+            return next(new AppError('Name, description, and photo are required.', 400));
         }
 
-        const db = getDb();
         const newTeam = {
             name,
             description,
-            leaderName,
-            contactEmail,
-            imageUrl,
-            isActive: isActive !== false, // default to true
+            photoUrl,
+            isActive: true,
             createdAt: new Date().toISOString(),
         };
 
@@ -67,30 +65,26 @@ export const createMinistryTeam = async (req, res, next) => {
 export const updateMinistryTeam = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name, description, leaderName, contactEmail, imageUrl, isActive } = req.body;
-        
-        const updateData = {};
-        if (name) updateData.name = name;
-        if (description) updateData.description = description;
-        if (leaderName) updateData.leaderName = leaderName;
-        if (contactEmail) updateData.contactEmail = contactEmail;
-        if (imageUrl) updateData.imageUrl = imageUrl;
-        if (isActive !== undefined) updateData.isActive = isActive;
+        const { name, description, photoUrl, isActive } = req.body;
 
-        if (Object.keys(updateData).length === 0) {
-            return next(new AppError('No update data provided.', 400));
+        if (!ObjectId.isValid(id)) {
+            return next(new AppError('Invalid ministry team ID.', 400));
         }
 
         const db = getDb();
-        const result = await db.collection('ministry_teams').findOneAndUpdate(
-            { _id: new ObjectId(id) },
-            { $set: updateData },
-            { returnDocument: 'after' }
-        );
-        
-        if (!result.value) return next(new AppError('Ministry team not found.', 404));
+        const updatedFields = { name, description, photoUrl, isActive };
 
-        res.status(200).json(formatMinistryTeamForClient(result.value));
+        const result = await db.collection('ministry_teams').updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updatedFields }
+        );
+
+        if (result.matchedCount === 0) {
+            return next(new AppError('Ministry team not found.', 404));
+        }
+
+        const updatedTeam = await db.collection('ministry_teams').findOne({ _id: new ObjectId(id) });
+        res.status(200).json(formatMinistryTeamForClient(updatedTeam));
     } catch (error) {
         next(new AppError('Failed to update ministry team.', 500));
     }
@@ -99,11 +93,19 @@ export const updateMinistryTeam = async (req, res, next) => {
 export const deleteMinistryTeam = async (req, res, next) => {
     try {
         const { id } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+            return next(new AppError('Invalid ministry team ID.', 400));
+        }
+
         const db = getDb();
-        // Future enhancement: Delete image from Cloudinary
         const result = await db.collection('ministry_teams').deleteOne({ _id: new ObjectId(id) });
-        if (result.deletedCount === 0) return next(new AppError('Ministry team not found.', 404));
-        res.status(204).send();
+
+        if (result.deletedCount === 0) {
+            return next(new AppError('Ministry team not found.', 404));
+        }
+
+        res.status(200).json({ message: 'Ministry team deleted successfully.' });
     } catch (error) {
         next(new AppError('Failed to delete ministry team.', 500));
     }

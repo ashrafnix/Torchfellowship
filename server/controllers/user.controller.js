@@ -1,10 +1,8 @@
-
-import { getDb } from '../db/index.js';
+import { getDb } from '../server.js';
 import AppError from '../utils/AppError.js';
 import { ObjectId } from 'mongodb';
 import { UserRole } from '../utils/constants.js';
 import { formatUserForClient } from '../utils/userFormatter.js';
-
 
 export const getAllUsers = async (req, res, next) => {
     try {

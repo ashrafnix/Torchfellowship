@@ -6,6 +6,7 @@ import { ICONS } from '../constants';
 import { uploadImage } from '../services/uploadService';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
+import { getApiUrl } from '../config/api';
 
 const ProfilePage: React.FC = () => {
   const { user, reloadUser } = useAuth();
@@ -16,7 +17,7 @@ const ProfilePage: React.FC = () => {
 
   const mutation = useMutation({
       mutationFn: async (payload: { fullName: string; avatarUrl: string | null; }) => {
-        const response = await fetch('/api/profile/me', {
+        const response = await fetch(getApiUrl('/api/profile/me'), {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -88,7 +89,7 @@ const ProfilePage: React.FC = () => {
                 />
                  <label htmlFor="avatar-upload" className="absolute -bottom-1 -right-1 bg-brand-gold text-brand-dark p-1.5 rounded-full cursor-pointer hover:bg-brand-gold-dark transition-colors">
                     <ICONS.Edit className="w-4 h-4" />
-                    <input id="avatar-upload" type="file" className="sr-only" accept="image/png, image/jpeg" onChange={handleAvatarChange} />
+                    <input id="avatar-upload" type="file" className="sr-only" accept="image/png, image/jpeg" onChange={handleAvatarChange} aria-label="Upload new profile picture" />
                 </label>
               </div>
               <div className="flex-grow">

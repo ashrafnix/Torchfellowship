@@ -1,11 +1,11 @@
 import React from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { Link } = ReactRouterDOM as any;
-import { ICONS } from '../../constants.tsx';
-import { useAuth } from '../../hooks/useAuth.ts';
-import Spinner from '../../components/ui/Spinner.tsx';
+import { ICONS } from '../../constants';
+import { useAuth } from '../../hooks/useAuth';
+import Spinner from '../../components/ui/Spinner';
 import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
+import { useApi } from '../../hooks/useApi';
 
 interface AdminStats {
   users: number;
@@ -56,6 +56,7 @@ const AdminDashboard: React.FC = () => {
     { name: 'Manage Torch Kids', path: '/admin/torch-kids', icon: <ICONS.Child className="h-10 w-10 text-brand-text-dark group-hover:text-brand-gold transition-colors" /> },
     { name: 'Manage Content', path: '/admin/content', icon: <ICONS.FileText className="h-10 w-10 text-brand-text-dark group-hover:text-brand-gold transition-colors" /> },
     { name: 'Admin Chat', path: '/chat', icon: <ICONS.MessageSquare className="h-10 w-10 text-brand-text-dark group-hover:text-brand-gold transition-colors" /> },
+    { name: 'Manage New Converts', path: '/admin/new-converts', icon: <ICONS.Users className="h-10 w-10 text-brand-text-dark group-hover:text-brand-gold transition-colors" /> },
   ];
 
   if (isLoading) {

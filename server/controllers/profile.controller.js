@@ -1,51 +1,75 @@
 
-import { getDb } from '../db/index.js';
+import { getDb } from '../server.js';
 import AppError from '../utils/AppError.js';
-import { ObjectId } from 'mongodb';
-import { formatUserForClient } from '../utils/userFormatter.js';
 
-export const getMyProfile = (req, res, next) => {
-    // req.user is attached by the authMiddleware
-    if (!req.user) {
-        return next(new AppError('User not found on request.', 404));
+export const getDashboardStats = async (req, res, next) => {
+    try {
+        const db = getDb();
+        const users = await db.collection('users').countDocuments();
+        const teachings = await db.collection('teachings').countDocuments();
+        const events = await db.collection('events').countDocuments();
+        const prayers = await db.collection('prayer_requests').countDocuments();
+        const leaders = await db.collection('leaders').countDocuments();
+        const testimonies = await db.collection('testimonies').countDocuments();
+        const ministryTeams = await db.collection('ministry_teams').countDocuments();
+        const blogPosts = await db.collection('blog_posts').countDocuments();
+        const lightCampuses = await db.collection('light_campuses').countDocuments({ isActive: true });
+        const campusApplications = await db.collection('light_campus_applications').countDocuments({ status: 'Pending' });
+
+        res.status(200).json({ users, teachings, events, prayers, leaders, testimonies, ministryTeams, blogPosts, lightCampuses, campusApplications });
+    } catch (error) {
+        next(new AppError('Failed to fetch dashboard statistics.', 500));
     }
-    res.status(200).json(formatUserForClient(req.user));
 };
 
+import { ObjectId } from 'mongodb';
+import { formatUserForClient as formatUser } from '../utils/userFormatter.js';
+
+export const getMyProfile = async (req, res, next) => {
+    try {
+        const db = getDb();
+        const userId = req.user._id;
+
+        const user = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+
+        if (!user) {
+            return next(new AppError('User profile not found.', 404));
+        }
+
+        res.status(200).json(formatUser(user));
+    } catch (error) {
+        next(new AppError('Failed to fetch user profile.', 500));
+    }
+};
 
 export const updateMyProfile = async (req, res, next) => {
     try {
-        // The user's ID comes from the auth middleware, ensuring they can only update their own profile.
-        const userId = req.user._id;
-        const { fullName, avatarUrl } = req.body;
         const db = getDb();
+        const userId = req.user._id;
+        const { name, email, phone, address } = req.body;
 
-        const updateData = {};
-        
-        // Only add fields to the update object if they were provided in the request
-        if (fullName) updateData.fullName = fullName;
-        // Allows setting avatarUrl to a new string or removing it by passing null
-        if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl; 
+        const updatedFields = {};
+        if (name) updatedFields.name = name;
+        if (email) updatedFields.email = email;
+        if (phone) updatedFields.phone = phone;
+        if (address) updatedFields.address = address;
 
-        if (Object.keys(updateData).length === 0) {
-            return next(new AppError('No update data provided. Please provide a fullName or avatarUrl.', 400));
-        }
-
-        const result = await db.collection('users').findOneAndUpdate(
+        const result = await db.collection('users').updateOne(
             { _id: new ObjectId(userId) },
-            { $set: updateData },
-            { returnDocument: 'after' }
+            { $set: updatedFields }
         );
 
-        if (!result.value) {
-            return next(new AppError('User not found.', 404));
+        if (result.matchedCount === 0) {
+            return next(new AppError('User profile not found.', 404));
         }
 
-        res.status(200).json({
-            status: 'success',
-            user: formatUserForClient(result.value),
+        const updatedUser = await db.collection('users').findOne({ _id: new ObjectId(userId) });
+
+        res.status(200).json({ 
+            message: 'Profile updated successfully.', 
+            user: formatUser(updatedUser) 
         });
     } catch (error) {
-        next(new AppError('Could not update profile.', 500));
+        next(new AppError('Failed to update user profile.', 500));
     }
 };

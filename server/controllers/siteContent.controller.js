@@ -1,5 +1,4 @@
-
-import { getDb } from '../db/index.js';
+import { getDb } from '../server.js';
 import AppError from '../utils/AppError.js';
 
 export const getContent = async (req, res, next) => {
@@ -13,7 +12,6 @@ export const getContent = async (req, res, next) => {
         const content = await db.collection('site_content').findOne({ page: page });
         
         if (!content) {
-            // Return a default empty structure if no content exists for the page yet
             return res.status(200).json({ page, elements: {} });
         }
         
@@ -32,7 +30,7 @@ export const updateContent = async (req, res, next) => {
         await db.collection('site_content').updateOne(
             { page: page },
             { $set: { page, elements } },
-            { upsert: true } // Creates the document if it doesn't exist
+            { upsert: true }
         );
 
         res.status(200).json({ message: 'Content updated successfully' });

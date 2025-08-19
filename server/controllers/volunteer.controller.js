@@ -1,5 +1,4 @@
-
-import { getDb } from '../db/index.js';
+import { getDb } from '../server.js';
 import { ObjectId } from 'mongodb';
 import AppError from '../utils/AppError.js';
 
@@ -37,43 +36,43 @@ export const createApplication = async (req, res, next) => {
         next(new AppError('Failed to submit application.', 500));
     }
 };
-
-
 export const getAllApplications = async (req, res, next) => {
     try {
         const db = getDb();
-        const dbApplications = await db.collection('volunteer_applications')
+        const applications = await db.collection('volunteer_applications')
             .find({})
             .sort({ createdAt: -1 })
             .toArray();
-        const applications = dbApplications.map((app) => ({...app, _id: app._id.toHexString()}));
         res.status(200).json(applications);
     } catch (error) {
-        next(new AppError('Failed to fetch applications.', 500));
+        next(new AppError('Failed to fetch volunteer applications.', 500));
     }
 };
-
 
 export const updateApplicationStatus = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
 
-        if (!['Approved', 'Rejected'].includes(status)) {
-            return next(new AppError('Invalid status provided.', 400));
+        if (!ObjectId.isValid(id)) {
+            return next(new AppError('Invalid application ID.', 400));
+        }
+
+        if (!['Pending', 'Approved', 'Rejected'].includes(status)) {
+            return next(new AppError('Invalid status.', 400));
         }
 
         const db = getDb();
         const result = await db.collection('volunteer_applications').updateOne(
             { _id: new ObjectId(id) },
-            { $set: { status: status } }
+            { $set: { status } }
         );
 
         if (result.matchedCount === 0) {
             return next(new AppError('Application not found.', 404));
         }
 
-        res.status(200).json({ message: `Application status updated to ${status}.` });
+        res.status(200).json({ message: 'Application status updated successfully.' });
     } catch (error) {
         next(new AppError('Failed to update application status.', 500));
     }

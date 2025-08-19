@@ -1,6 +1,6 @@
 
-import * as jwt from 'jsonwebtoken';
-import { getDb } from '../db/index.js';
+import jwt from 'jsonwebtoken';
+import { getDb } from '../server.js';
 import AppError from '../utils/AppError.js';
 import { ObjectId } from 'mongodb';
 import { UserRole } from '../utils/constants.js';
@@ -34,7 +34,7 @@ export const authMiddleware = async (req, res, next) => {
         next();
 
     } catch(err) {
-        if (err instanceof jwt.JsonWebTokenError) {
+        if (err.name === 'JsonWebTokenError') {
              return next(new AppError('Invalid token. Please log in again.', 401));
         }
         return next(new AppError('Authentication failed. Please log in again.', 401));

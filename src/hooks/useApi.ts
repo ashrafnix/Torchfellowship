@@ -1,5 +1,6 @@
 import { useAuth } from './useAuth';
 import { useCallback } from 'react';
+import { getApiUrl } from '../config/api';
 
 export const useApi = () => {
     const { token, logout } = useAuth();
@@ -26,7 +27,7 @@ export const useApi = () => {
             config.body = JSON.stringify(body);
         }
 
-        const response = await fetch(endpoint, config);
+        const response = await fetch(getApiUrl(endpoint), config);
 
         if (response.status === 401) {
             // Unauthorized, token might be expired

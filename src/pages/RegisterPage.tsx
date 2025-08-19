@@ -6,6 +6,7 @@ const { useNavigate, Navigate, Link } = ReactRouterDOM as any;
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { useAuth } from '../hooks/useAuth';
+import { getApiUrl } from '../config/api';
 
 const RegisterPage: React.FC = () => {
     const [fullName, setFullName] = useState('');
@@ -25,7 +26,7 @@ const RegisterPage: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch('/api/auth/register', {
+            const res = await fetch(getApiUrl('/api/auth/register'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ fullName, email, password }),

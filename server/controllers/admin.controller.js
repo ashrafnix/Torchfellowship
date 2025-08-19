@@ -1,5 +1,4 @@
-
-import { getDb } from '../db/index.js';
+import { getDb } from '../server.js';
 import AppError from '../utils/AppError.js';
 
 export const getDashboardStats = async (req, res, next) => {

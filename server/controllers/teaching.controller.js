@@ -1,5 +1,4 @@
-
-import { getDb } from '../db/index.js';
+import { getDb } from '../server.js';
 import { ObjectId } from 'mongodb';
 import AppError from '../utils/AppError.js';
 
@@ -36,7 +35,7 @@ export const updateTeaching = async (req, res, next) => {
     try {
         const db = getDb();
         const { id } = req.params;
-        const { _id, ...updateData } = req.body; // Don't update the _id
+        const { _id, ...updateData } = req.body;
         const result = await db.collection('teachings').updateOne({ _id: new ObjectId(id) }, { $set: updateData });
         if(result.matchedCount === 0) return next(new AppError('Teaching not found', 404));
         res.status(200).json({ message: 'Teaching updated successfully' });

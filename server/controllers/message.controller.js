@@ -1,5 +1,4 @@
-
-import { getDb } from '../db/index.js';
+import { getDb } from '../server.js';
 import { ObjectId } from 'mongodb';
 import AppError from '../utils/AppError.js';
 
@@ -7,9 +6,9 @@ export const getCommunityMessages = async (req, res, next) => {
     try {
         const db = getDb();
         const dbMessages = await db.collection('messages')
-            .find({ recipientId: { $exists: false } }) // Community messages have no recipientId
+            .find({ recipientId: { $exists: false } })
             .sort({ created_at: 1 })
-            .limit(100) // Get last 100 messages
+            .limit(100)
             .toArray();
         const messages = dbMessages.map((m) => ({...m, _id: m._id.toHexString()}));
         res.status(200).json(messages);
@@ -21,33 +20,32 @@ export const getCommunityMessages = async (req, res, next) => {
 export const getPrivateMessages = async (req, res, next) => {
     try {
         const db = getDb();
+        const { userId } = req.query;
         const currentUserId = req.user._id.toHexString();
-        const otherUserId = req.query.userId;
 
-        if (!otherUserId) {
-            return next(new AppError('User ID for private chat is required.', 400));
+        if (!userId) {
+            return next(new AppError('User ID is required to fetch private messages.', 400));
         }
 
         const dbMessages = await db.collection('messages').find({
             $or: [
-                { authorId: currentUserId, recipientId: otherUserId },
-                { authorId: otherUserId, recipientId: currentUserId }
+                { authorId: currentUserId, recipientId: userId },
+                { authorId: userId, recipientId: currentUserId }
             ]
         }).sort({ created_at: 1 }).toArray();
-        
+
         const messages = dbMessages.map((m) => ({...m, _id: m._id.toHexString()}));
         res.status(200).json(messages);
     } catch (error) {
         next(new AppError('Failed to fetch private messages.', 500));
     }
 };
-
 export const createMessage = async (req, res, next) => {
     try {
         const db = getDb();
         const newMessageData = {
             ...req.body,
-            authorId: req.user._id.toHexString(), // Ensure author is the logged in user
+            authorId: req.user._id.toHexString(),
             created_at: new Date().toISOString(),
         };
 

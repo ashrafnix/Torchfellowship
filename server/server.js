@@ -1,14 +1,28 @@
+// server.js
 
+// -----------------------------------------------------------------------------
+// IMPORTANT: Environment Variable Loading
+// This MUST be the very first thing to run so that all other files/modules
+// have access to the environment variables.
+// -----------------------------------------------------------------------------
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+// -----------------------------------------------------------------------------
+// Module Imports (Now that .env is loaded)
+// -----------------------------------------------------------------------------
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
-import { connectToDatabase } from './db/index.js';
+import { MongoClient } from 'mongodb';
 import AppError from './utils/AppError.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -27,47 +41,85 @@ import cloudinaryRoutes from './api/cloudinary.routes.js';
 import leaderRoutes from './api/leader.routes.js';
 import testimonyRoutes from './api/testimony.routes.js';
 import ministryTeamRoutes from './api/ministryTeam.routes.js';
+import newConvertsRoutes from './api/newConverts.routes.js';
 import volunteerRoutes from './api/volunteer.routes.js';
 import blogRoutes from './api/blog.routes.js';
 import lightCampusRoutes from './api/lightCampus.routes.js';
 import torchKidsRoutes from './api/torchKids.routes.js';
 
+// Direct MongoDB connection string
+const MONGODB_URI = process.env.MONGODB_URI;
+const DB_NAME = 'torch-fellowship';
 
-// Load environment variables from .env file
-dotenv.config();
+let db;
 
+async function connectToDatabase() {
+    if (db) return db;
+    try {
+        console.log('🔌 Connecting to MongoDB Atlas...');
+        console.log(`Using MongoDB URI: ${MONGODB_URI ? 'Loaded from .env' : 'Not found in .env'}`);
+        if (!MONGODB_URI) {
+            throw new Error('MONGODB_URI not found in .env file');
+        }
+        const client = new MongoClient(MONGODB_URI);
+        await client.connect();
+        db = client.db(DB_NAME);
+        console.log('✅ Connected to MongoDB Atlas');
+        return db;
+    } catch (error) {
+        console.error('❌ MongoDB connection failed:', error.message);
+        throw error;
+    }
+}
+
+export const getDb = () => {
+    if (!db) throw new Error('Database not initialized');
+    return db;
+};
+
+
+
+// -----------------------------------------------------------------------------
+// Express App Initialization
+// -----------------------------------------------------------------------------
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Define __dirname in ES module scope
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
-// Connect to MongoDB database
-connectToDatabase();
+// -----------------------------------------------------------------------------
+// Global Middleware
+// -----------------------------------------------------------------------------
+app.use(helmet()); // Set security HTTP headers
 
-// --- GLOBAL MIDDLEWARE ---
-// Set security HTTP headers
-app.use(helmet());
+// Enable CORS with specific origins
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  credentials: true
+}));
 
-// Enable CORS
-app.use(cors());
+// Debug logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
 
 // Rate Limiter for general API requests
 const apiLimiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 100, // Limit each IP to 100 requests per window
-	standardHeaders: true,
-	legacyHeaders: false,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
     message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 app.use('/api/', apiLimiter);
 
-
+// Body Parsers
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-// --- API ROUTES ---
+// -----------------------------------------------------------------------------
+// API Routes
+// -----------------------------------------------------------------------------
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/users', userRoutes);
@@ -85,11 +137,13 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/ministry-teams', ministryTeamRoutes);
 app.use('/api/volunteer', volunteerRoutes);
 app.use('/api/blog', blogRoutes);
+app.use('/api/new-converts', newConvertsRoutes);
 app.use('/api/light-campuses', lightCampusRoutes);
 app.use('/api/torch-kids', torchKidsRoutes);
 
-
-// --- STATIC FILE SERVING FOR REACT APP ---
+// -----------------------------------------------------------------------------
+// Static File Serving (for Production)
+// -----------------------------------------------------------------------------
 // Temporarily commented out until frontend is built
 // const clientPath = path.join(__dirname, '..', 'dist');
 // app.use(express.static(clientPath));
@@ -103,9 +157,9 @@ app.use('/api/torch-kids', torchKidsRoutes);
 //     res.sendFile(path.resolve(clientPath, 'index.html'));
 // });
 
-
-// --- ERROR HANDLING ---
-
+// -----------------------------------------------------------------------------
+// Error Handling
+// -----------------------------------------------------------------------------
 // Handle all routes that are not found
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
@@ -114,8 +168,24 @@ app.all('*', (req, res, next) => {
 // Centralized error handling middleware
 app.use(errorHandler);
 
+// -----------------------------------------------------------------------------
+// Server Startup
+// -----------------------------------------------------------------------------
+async function startServer() {
+  try {
+    // Connect to database first
+    await connectToDatabase();
+    
+    // Start HTTP server
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on http://localhost:${PORT}`);
+      console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+      console.log(`🔍 Debug mode enabled - all requests will be logged`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error.message);
+    process.exit(1);
+  }
+}
 
-// --- SERVER STARTUP ---
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-});
+startServer();

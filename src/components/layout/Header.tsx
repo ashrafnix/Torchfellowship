@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { NavLink, Link, useLocation } = ReactRouterDOM as any;
@@ -21,33 +19,79 @@ const MobileNavLink: React.FC<{ to: string; children: React.ReactNode; closeMenu
     );
 };
 
-const Header: React.FC = () => {
-    const { user, logout, isAdmin } = useAuth();
-    const [isProfileOpen, setProfileOpen] = useState(false);
-    const [isLeadershipOpen, setLeadershipOpen] = useState(false);
-    const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const profileRef = useRef<HTMLDivElement>(null);
-    const leadershipRef = useRef<HTMLDivElement>(null);
+// New Dropdown Component
+interface DropdownLink {
+    to: string;
+    text: string;
+}
+
+interface DropdownProps {
+    title: string;
+    links: DropdownLink[];
+}
+
+const Dropdown: React.FC<DropdownProps> = ({ title, links }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const location = useLocation();
 
     const activeLinkClass = 'text-brand-gold';
     const inactiveLinkClass = 'text-brand-text-dark hover:text-brand-gold';
     const linkClasses = `px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 relative after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:w-0 after:h-0.5 after:bg-brand-gold after:transition-all after:duration-300 hover:after:w-1/2 hover:after:left-1/4`;
 
-    const isLeadershipRouteActive = location.pathname === '/leadership' || location.pathname === '/leaders';
+    const isRouteActive = links.some(link => location.pathname === link.to);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <button
+                onClick={() => setIsOpen(prev => !prev)}
+                className={`${linkClasses} ${isRouteActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass} flex items-center`}
+            >
+                {title}
+                <ICONS.ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+                <div className="origin-top-right absolute left-0 mt-2 w-56 rounded-md shadow-lg py-1 bg-brand-surface ring-1 ring-black ring-opacity-5 focus:outline-none z-10 animate-fadeInDropdown">
+                    {links.map(link => (
+                        <Link key={link.to} to={link.to} onClick={() => setIsOpen(false)} className="block px-4 py-2 text-sm text-brand-text-dark hover:bg-brand-muted hover:text-white w-full text-left">
+                            {link.text}
+                        </Link>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const Header: React.FC = () => {
+    const { user, logout, isAdmin } = useAuth();
+    const [isProfileOpen, setProfileOpen] = useState(false);
+    const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const profileRef = useRef<HTMLDivElement>(null);
+
+    const activeLinkClass = 'text-brand-gold';
+    const inactiveLinkClass = 'text-brand-text-dark hover:text-brand-gold';
+    const linkClasses = `px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 relative after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:w-0 after:h-0.5 after:bg-brand-gold after:transition-all after:duration-300 hover:after:w-1/2 hover:after:left-1/4`;
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
                 setProfileOpen(false);
             }
-            if (leadershipRef.current && !leadershipRef.current.contains(event.target as Node)) {
-                setLeadershipOpen(false);
-            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [profileRef, leadershipRef]);
+    }, [profileRef]);
 
     useEffect(() => {
         if (isMobileMenuOpen) {
@@ -67,46 +111,34 @@ const Header: React.FC = () => {
             <header className="bg-brand-dark/60 backdrop-blur-xl sticky top-0 z-40 border-b border-brand-surface/50">
                 <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-20">
-                        <Link to="/" className="flex-shrink-0 flex items-center space-x-3" onClick={() => { closeMobileMenu(); setLeadershipOpen(false); }}>
+                        <Link to="/" className="flex-shrink-0 flex items-center space-x-3" onClick={() => { closeMobileMenu(); }}>
                             <img className="h-12 w-auto" src="https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273222/Torch-logo_ithw3f.png" alt="Torch Fellowship" />
                             <span className="text-white text-2xl font-serif font-bold">Torch Fellowship</span>
                         </Link>
                         
                         <div className="hidden md:flex items-center space-x-1">
                             <NavLink to="/" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`} end>Home</NavLink>
-                            <NavLink to="/about" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>About</NavLink>
+                            <Dropdown title="About Us" links={[
+                                { to: "/about", text: "About" },
+                                { to: "/leadership", text: "Leadership" },
+                                { to: "/leaders", text: "Our Leaders" },
+                                { to: "/ministries", text: "Ministries" },
+                                { to: "/torch-kids", text: "Torch Kids" },
+                            ]} />
                             <NavLink to="/teachings" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Teachings</NavLink>
-                            <NavLink to="/events" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Events</NavLink>
-                            <NavLink to="/blog" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Blog</NavLink>
-                            
-                            <div className="relative" ref={leadershipRef}>
-                                <button
-                                    onClick={() => setLeadershipOpen(prev => !prev)}
-                                    className={`${linkClasses} ${isLeadershipRouteActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass} flex items-center`}
-                                >
-                                    Leadership
-                                    <ICONS.ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${isLeadershipOpen ? 'rotate-180' : ''}`} />
-                                </button>
-                                {isLeadershipOpen && (
-                                    <div className="origin-top-right absolute left-0 mt-2 w-56 rounded-md shadow-lg py-1 bg-brand-surface ring-1 ring-black ring-opacity-5 focus:outline-none z-10 animate-fadeInDropdown">
-                                        <Link to="/leadership" onClick={() => setLeadershipOpen(false)} className="block px-4 py-2 text-sm text-brand-text-dark hover:bg-brand-muted hover:text-white w-full text-left">
-                                            Our Philosophy
-                                        </Link>
-                                        <Link to="/leaders" onClick={() => setLeadershipOpen(false)} className="block px-4 py-2 text-sm text-brand-text-dark hover:bg-brand-muted hover:text-white w-full text-left">
-                                            Our Leaders
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
-
-                            <NavLink to="/prayer" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Prayer</NavLink>
-                            <NavLink to="/light-campuses" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Light Campuses</NavLink>
-                            <NavLink to="/testimonies" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Testimonies</NavLink>
-                            <NavLink to="/ministries" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Ministries</NavLink>
-                            <NavLink to="/torch-kids" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Torch Kids</NavLink>
-                            <NavLink to="/serve" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Serve</NavLink>
-                            <NavLink to="/give" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Give</NavLink>
-                            <NavLink to="/contact" className={({ isActive }: { isActive: boolean}) => `${linkClasses} ${isActive ? activeLinkClass + " after:w-1/2 after:left-1/4" : inactiveLinkClass}`}>Contact</NavLink>
+                            <Dropdown title="Community" links={[
+                                { to: "/events", text: "Events" },
+                                { to: "/blog", text: "Blog" },
+                                { to: "/prayer", text: "Prayer" },
+                                { to: "/light-campuses", text: "Light Campuses" },
+                                { to: "/testimonies", text: "Testimonies" },
+                            ]} />
+                            <Dropdown title="Get Involved" links={[
+                                { to: "/serve", text: "Serve" },
+                                { to: "/give", text: "Give" },
+                                { to: "/contact", text: "Contact" },
+                                { to: "/new-converts", text: "New Converts" },
+                            ]} />
                         </div>
 
                         <div className="flex items-center space-x-4">

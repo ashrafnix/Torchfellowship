@@ -32,6 +32,7 @@ import BlogListPage from './pages/BlogListPage';
 import BlogPostPage from './pages/BlogPostPage';
 import JoinUsPage from './pages/JoinUsPage';
 import TorchKidsPage from './pages/TorchKidsPage';
+import NewConvertsPage from './pages/NewConvertsPage';
 
 
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -46,6 +47,7 @@ import ManageServe from './pages/admin/ManageServe';
 import ManageBlog from './pages/admin/ManageBlog';
 import ManageCampuses from './pages/admin/ManageCampuses';
 import ManageTorchKids from './pages/admin/ManageTorchKids';
+import ManageNewConverts from './pages/admin/ManageNewConverts';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +88,7 @@ const App: React.FC = () => {
                   <Route path="/join-us" element={<JoinUsPage />} />
                   <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                   <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                  <Route path="/new-converts" element={<NewConvertsPage />} />
                 </Route>
 
                 <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
@@ -101,6 +104,7 @@ const App: React.FC = () => {
                   <Route path="blog" element={<ManageBlog />} />
                   <Route path="campuses" element={<ManageCampuses />} />
                   <Route path="torch-kids" element={<ManageTorchKids />} />
+                  <Route path="new-converts" element={<ManageNewConverts />} />
                 </Route>
                 
               </Routes>
