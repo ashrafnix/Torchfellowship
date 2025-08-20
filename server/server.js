@@ -26,8 +26,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import AppError from './utils/AppError.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -88,7 +91,63 @@ export const getDb = () => {
 // Express App Initialization
 // -----------------------------------------------------------------------------
 const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    credentials: true
+  }
+});
 const PORT = process.env.PORT || 8080;
+
+// Socket.IO connection handling
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error('Authentication error'));
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'a-very-secret-key');
+    socket.userId = decoded.id;
+    next();
+  } catch (err) {
+    next(new Error('Authentication error'));
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id, 'User ID:', socket.userId);
+  
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+    console.log(`User ${socket.userId} joined room ${roomId}`);
+  });
+  
+  socket.on('message-delivered', async (messageId) => {
+    try {
+      const db = getDb();
+      await db.collection('messages').updateOne(
+        { _id: new ObjectId(messageId) },
+        { $set: { delivered: true } }
+      );
+      
+      const message = await db.collection('messages').findOne({ _id: new ObjectId(messageId) });
+      if (message && message.recipientId) {
+        const roomId = [message.authorId, message.recipientId].sort().join('-');
+        io.to(roomId).emit('message-status-updated', { messageId, delivered: true });
+      }
+    } catch (error) {
+      console.error('Error marking message as delivered:', error);
+    }
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+export const getIo = () => io;
 
 
 // -----------------------------------------------------------------------------
@@ -181,10 +240,11 @@ async function startServer() {
     // Connect to database first
     await connectToDatabase();
     
-    // Start HTTP server
-    app.listen(PORT, () => {
+    // Start HTTP server with Socket.IO
+    server.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}`);
       console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+      console.log(`🔌 Socket.IO server ready for real-time messaging`);
       console.log(`🔍 Debug mode enabled - all requests will be logged`);
     });
   } catch (error) {

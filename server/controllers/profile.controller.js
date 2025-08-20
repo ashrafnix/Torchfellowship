@@ -46,13 +46,14 @@ export const updateMyProfile = async (req, res, next) => {
     try {
         const db = getDb();
         const userId = req.user._id;
-        const { name, email, phone, address } = req.body;
+        const { fullName, email, phone, address, avatarUrl } = req.body;
 
         const updatedFields = {};
-        if (name) updatedFields.name = name;
+        if (fullName) updatedFields.fullName = fullName;
         if (email) updatedFields.email = email;
         if (phone) updatedFields.phone = phone;
         if (address) updatedFields.address = address;
+        if (avatarUrl !== undefined) updatedFields.avatarUrl = avatarUrl;
 
         const result = await db.collection('users').updateOne(
             { _id: new ObjectId(userId) },

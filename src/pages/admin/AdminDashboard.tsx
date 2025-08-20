@@ -63,16 +63,62 @@ const AdminDashboard: React.FC = () => {
     return <div className="flex justify-center items-center h-64"><Spinner /></div>
   }
 
+  const primaryStats = statItems.slice(0, 4);
+  const secondaryStats = statItems.slice(4);
+
   return (
     <div className="space-y-12">
-      {/* Stats Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {statItems.map(stat => (
-          <div key={stat.name} className="bg-brand-surface rounded-lg p-6 flex items-center space-x-6 border border-brand-muted/50">
-            <div className="bg-brand-muted p-4 rounded-full">{stat.icon}</div>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        
+        .dashboard-card {
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0px 8px 32px rgba(0, 0, 0, 0.3);
+          transition: all 0.2s ease-in-out;
+        }
+        
+        .dashboard-card:hover {
+          transform: translateY(-5px);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .primary-card {
+          background: linear-gradient(135deg, rgba(106, 141, 255, 0.1), rgba(150, 80, 255, 0.05));
+          border: 1px solid rgba(106, 141, 255, 0.2);
+        }
+      `}</style>
+      
+      {/* Primary Stats Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {primaryStats.map((stat, index) => (
+          <div key={stat.name} className={`dashboard-card ${index < 2 ? 'primary-card' : ''} rounded-2xl p-6 flex flex-col space-y-4`}>
+            <div className="flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-white/10">
+                {React.cloneElement(stat.icon, { className: 'h-6 w-6 text-blue-400' })}
+              </div>
+              {index < 2 && <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>}
+            </div>
             <div>
-              <p className="text-4xl font-bold text-white">{stat.value}</p>
-              <p className="text-sm text-brand-text-dark">{stat.name}</p>
+              <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
+              <p className="text-sm font-medium text-gray-300">{stat.name}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Secondary Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {secondaryStats.map(stat => (
+          <div key={stat.name} className="dashboard-card rounded-xl p-4 flex flex-col items-center text-center space-y-3">
+            <div className="p-2 rounded-lg bg-white/5">
+              {React.cloneElement(stat.icon, { className: 'h-5 w-5 text-gray-400' })}
+            </div>
+            <div>
+              <p className="text-xl font-bold text-white">{stat.value}</p>
+              <p className="text-xs text-gray-400">{stat.name}</p>
             </div>
           </div>
         ))}
@@ -80,17 +126,24 @@ const AdminDashboard: React.FC = () => {
 
       {/* Management Section */}
       <div>
-        <h2 className="text-2xl font-serif font-bold text-white mb-6">Management</h2>
+        <div className="flex items-center space-x-3 mb-8">
+          <div className="w-1 h-8 bg-gradient-to-b from-blue-400 to-purple-500 rounded-full"></div>
+          <h2 className="text-2xl font-bold text-white">Management Center</h2>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {managementLinks.map(link => (
-            <Link key={link.name} to={link.path} className="group bg-brand-surface rounded-lg p-6 text-center hover:bg-brand-muted border border-brand-muted/50 hover:border-brand-gold/30 transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center justify-center space-y-3">
-              {link.icon}
-              <p className="font-semibold text-white">{link.name}</p>
+            <Link key={link.name} to={link.path} className="dashboard-card group rounded-xl p-6 text-center hover:scale-105 flex flex-col items-center justify-center space-y-4">
+              <div className="p-3 rounded-xl bg-white/5 group-hover:bg-blue-500/20 transition-colors">
+                {React.cloneElement(link.icon, { className: 'h-6 w-6 text-gray-400 group-hover:text-blue-400 transition-colors' })}
+              </div>
+              <p className="font-medium text-white text-sm">{link.name}</p>
             </Link>
           ))}
-           <button onClick={logout} className="group bg-brand-surface rounded-lg p-6 text-center hover:bg-red-900/20 border border-brand-muted/50 hover:border-red-500/30 transition-all duration-300 transform hover:-translate-y-1 flex flex-col items-center justify-center space-y-3">
-              <ICONS.LogOut className="h-10 w-10 text-brand-text-dark group-hover:text-red-500 transition-colors" />
-              <p className="font-semibold text-white">Logout</p>
+           <button onClick={logout} className="dashboard-card group rounded-xl p-6 text-center hover:scale-105 hover:border-red-500/30 flex flex-col items-center justify-center space-y-4">
+              <div className="p-3 rounded-xl bg-white/5 group-hover:bg-red-500/20 transition-colors">
+                <ICONS.LogOut className="h-6 w-6 text-gray-400 group-hover:text-red-400 transition-colors" />
+              </div>
+              <p className="font-medium text-white text-sm">Logout</p>
             </button>
         </div>
       </div>

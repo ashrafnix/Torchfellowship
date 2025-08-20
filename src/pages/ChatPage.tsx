@@ -7,17 +7,28 @@ import Button from '../components/ui/Button.tsx';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi.ts';
 import { toast } from 'react-toastify';
+import { socketService } from '../services/socketService';
+import { uploadImage } from '../services/uploadService';
+import EmojiPicker from 'emoji-picker-react';
 
 const ChatPage: React.FC = () => {
     const { user } = useAuth();
     const { apiClient } = useApi();
     const queryClient = useQueryClient();
     
-    const [activeChat, setActiveChat] = useState<{ id: string, name: string, isCommunity: boolean, avatar?: string }>({ id: 'community', name: 'Community Chat', isCommunity: true });
+    const [activeChat, setActiveChat] = useState<{ id: string, name: string, type: 'community' | 'admin' | 'private', avatar?: string }>({ id: 'community', name: 'Community Chat', type: 'community' });
     const [input, setInput] = useState('');
     const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+    const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+    const [hoveredMessage, setHoveredMessage] = useState<string | null>(null);
     
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // --- Data Fetching ---
 
@@ -31,9 +42,14 @@ const ChatPage: React.FC = () => {
     const { data: messages = [], isLoading: isLoadingMessages } = useQuery<ChatMessage[]>({
         queryKey: ['messages', activeChat.id],
         queryFn: () => {
-            const url = activeChat.isCommunity 
-                ? '/api/messages/community' 
-                : `/api/messages/private?userId=${activeChat.id}`;
+            let url;
+            if (activeChat.type === 'community') {
+                url = '/api/messages/community';
+            } else if (activeChat.type === 'admin') {
+                url = '/api/messages/admin';
+            } else {
+                url = `/api/messages/private?userId=${activeChat.id}`;
+            }
             return apiClient<ChatMessage[]>(url, 'GET');
         },
         enabled: !!user,
@@ -42,15 +58,106 @@ const ChatPage: React.FC = () => {
     const sendMessageMutation = useMutation({
         mutationFn: (messagePayload: Partial<ChatMessage>) => apiClient<ChatMessage>('/api/messages', 'POST', messagePayload),
         onSuccess: (newMessage) => {
-            queryClient.setQueryData(['messages', activeChat.id], (oldData: ChatMessage[] | undefined) => 
-                oldData ? [...oldData, newMessage] : [newMessage]
-            );
+            queryClient.setQueryData(['messages', activeChat.id], (oldData: ChatMessage[] | undefined) => {
+                if (!oldData) return [newMessage];
+                const exists = oldData.some(msg => msg._id === newMessage._id);
+                return exists ? oldData : [...oldData, newMessage];
+            });
             setTimeout(() => scrollToBottom('smooth'), 0);
         },
         onError: (error: Error) => {
             toast.error(`Failed to send message: ${error.message}`);
         }
     });
+
+    // --- Socket.IO Setup ---
+    useEffect(() => {
+        if (!user) return;
+        
+        const token = localStorage.getItem('token');
+        if (token) {
+            socketService.connect(token);
+            
+            socketService.onNewMessage((message: ChatMessage) => {
+                let roomId;
+                if (message.chatType === 'admin') {
+                    roomId = 'admin';
+                } else if (message.recipientId) {
+                    roomId = [message.authorId, message.recipientId].sort().join('-');
+                } else {
+                    roomId = 'community';
+                }
+                
+                let currentRoomId;
+                if (activeChat.type === 'admin') {
+                    currentRoomId = 'admin';
+                } else if (activeChat.type === 'community') {
+                    currentRoomId = 'community';
+                } else {
+                    currentRoomId = [user.id, activeChat.id].sort().join('-');
+                }
+                    
+                if (roomId === currentRoomId) {
+                    queryClient.setQueryData(['messages', activeChat.id], (oldData: ChatMessage[] | undefined) => {
+                        if (!oldData) return [message];
+                        const exists = oldData.some(msg => msg._id === message._id);
+                        return exists ? oldData : [...oldData, message];
+                    });
+                    
+                    // Mark as read for private messages to me
+                    if (message.recipientId === user.id && message._id) {
+                        socketService.confirmMessageDelivered(message._id);
+                        setTimeout(() => markAsRead(message._id!), 1000);
+                    }
+                }
+            });
+            
+            socketService.onMessageRead(({ messageId, userId }) => {
+                queryClient.setQueryData(['messages', activeChat.id], (oldData: ChatMessage[] | undefined) => {
+                    if (!oldData) return oldData;
+                    return oldData.map(msg => 
+                        msg._id === messageId ? { ...msg, read: true, delivered: true } : msg
+                    );
+                });
+            });
+            
+            socketService.onMessageStatusUpdated(({ messageId, delivered, read }) => {
+                queryClient.setQueryData(['messages', activeChat.id], (oldData: ChatMessage[] | undefined) => {
+                    if (!oldData) return oldData;
+                    return oldData.map(msg => {
+                        if (msg._id === messageId) {
+                            return { 
+                                ...msg, 
+                                ...(delivered !== undefined && { delivered }),
+                                ...(read !== undefined && { read })
+                            };
+                        }
+                        return msg;
+                    });
+                });
+            });
+        }
+        
+        return () => {
+            socketService.offNewMessage();
+            socketService.offMessageRead();
+            socketService.offMessageStatusUpdated();
+        };
+    }, [user, activeChat.id, activeChat.type, queryClient]);
+    
+    useEffect(() => {
+        if (!user) return;
+        
+        let roomId;
+        if (activeChat.type === 'admin') {
+            roomId = 'admin';
+        } else if (activeChat.type === 'community') {
+            roomId = 'community';
+        } else {
+            roomId = [user.id, activeChat.id].sort().join('-');
+        }
+        socketService.joinRoom(roomId);
+    }, [activeChat, user]);
 
     // --- Effects and Handlers ---
 
@@ -91,10 +198,113 @@ const ChatPage: React.FC = () => {
             authorId: user.id,
             authorName: user.fullName || user.email,
             authorAvatar: user.avatarUrl,
-            recipientId: activeChat.isCommunity ? undefined : activeChat.id
+            recipientId: activeChat.type === 'private' ? activeChat.id : undefined,
+            chatType: activeChat.type,
+            ...(replyingTo && {
+                replyTo: {
+                    messageId: replyingTo._id!,
+                    content: replyingTo.isImage ? 'Image' : replyingTo.content.slice(0, 50),
+                    authorName: replyingTo.authorName
+                }
+            })
         };
         setInput('');
+        setReplyingTo(null);
         sendMessageMutation.mutate(messagePayload);
+        setSidebarOpen(false); // Close sidebar on mobile after sending
+    };
+    
+    const formatTime = (timestamp: string) => {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+        
+        if (diffInHours < 24) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else {
+            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        }
+    };
+    
+    const markAsRead = async (messageId: string) => {
+        try {
+            await apiClient(`/api/messages/${messageId}/read`, 'PATCH');
+        } catch (error) {
+            console.error('Failed to mark message as read:', error);
+        }
+    };
+    
+    const getMessageStatusIcon = (message: ChatMessage, isMyMessage: boolean) => {
+        if (!isMyMessage) return null;
+        
+        if (message.read) {
+            return <ICONS.CheckCheck className="w-4 h-4 text-blue-400" />;
+        } else if (message.delivered) {
+            return <ICONS.CheckCheck className="w-4 h-4 text-gray-400" />;
+        } else {
+            return <ICONS.Check className="w-4 h-4 text-gray-400" />;
+        }
+    };
+    
+    const onEmojiClick = (emojiData: any) => {
+        setInput(prev => prev + emojiData.emoji);
+        setShowEmojiPicker(false);
+    };
+    
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+                setShowEmojiPicker(false);
+            }
+        };
+        
+        if (showEmojiPicker) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showEmojiPicker]);
+    
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image file is too large. Please use a file under 5MB.');
+            return;
+        }
+        
+        setUploadingImage(true);
+        try {
+            const imageUrl = await uploadImage(file, 'chat-images');
+            const messagePayload: Partial<ChatMessage> = {
+                content: imageUrl,
+                authorId: user!.id,
+                authorName: user!.fullName || user!.email,
+                authorAvatar: user!.avatarUrl,
+                recipientId: activeChat.type === 'private' ? activeChat.id : undefined,
+                chatType: activeChat.type,
+                isImage: true
+            };
+            sendMessageMutation.mutate(messagePayload);
+        } catch (error) {
+            toast.error('Failed to upload image');
+        } finally {
+            setUploadingImage(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+    
+    const addReaction = async (messageId: string, emoji: string) => {
+        try {
+            await apiClient(`/api/messages/${messageId}/react`, 'POST', { emoji });
+            queryClient.invalidateQueries(['messages', activeChat.id]);
+        } catch (error) {
+            toast.error('Failed to add reaction');
+        }
     };
 
     const handleScroll = () => {
@@ -108,15 +318,28 @@ const ChatPage: React.FC = () => {
     };
     
     return (
-        <div className="container mx-auto p-4 md:p-8 h-[calc(100vh-10rem)]">
-            <div className="flex h-full bg-brand-surface rounded-lg shadow-2xl border border-brand-muted/50 overflow-hidden">
+        <div className="container mx-auto p-2 md:p-8 h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)]">
+            <div className="flex h-full bg-brand-surface rounded-lg shadow-2xl border border-brand-muted/50 overflow-hidden relative">
+                {/* Mobile Sidebar Overlay */}
+                {sidebarOpen && (
+                    <div 
+                        className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+                        onClick={() => setSidebarOpen(false)}
+                    />
+                )}
+                
                 {/* Sidebar */}
-                <div className="w-1/3 md:w-1/4 bg-brand-dark/50 border-r border-brand-muted/50 p-4 flex flex-col">
+                <div className={`${
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                } md:translate-x-0 fixed md:relative z-50 md:z-auto w-80 md:w-1/4 h-full bg-brand-dark/50 border-r border-brand-muted/50 p-4 flex flex-col transition-transform duration-300 ease-in-out`}>
                     <h2 className="text-xl font-bold font-serif text-white mb-4">Chats</h2>
                     <div className="flex-grow overflow-y-auto pr-2">
                         {/* Community Chat */}
                         <div 
-                            onClick={() => setActiveChat({ id: 'community', name: 'Community Chat', isCommunity: true })}
+                            onClick={() => {
+                                setActiveChat({ id: 'community', name: 'Community Chat', type: 'community' });
+                                setSidebarOpen(false);
+                            }}
                             className={`p-3 rounded-md mb-2 cursor-pointer transition-colors ${activeChat.id === 'community' ? 'bg-brand-gold text-brand-dark' : 'hover:bg-brand-muted'}`}
                         >
                             <div className="flex items-center space-x-3">
@@ -128,12 +351,34 @@ const ChatPage: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Admin Chat */}
+                        {(user?.role === 'Admin' || user?.role === 'Super-Admin') && (
+                            <div 
+                                onClick={() => {
+                                    setActiveChat({ id: 'admin', name: 'Admin Chat', type: 'admin' });
+                                    setSidebarOpen(false);
+                                }}
+                                className={`p-3 rounded-md mb-2 cursor-pointer transition-colors ${activeChat.id === 'admin' ? 'bg-brand-gold text-brand-dark' : 'hover:bg-brand-muted'}`}
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <div className="p-2 bg-red-600 rounded-full"><ICONS.Shield className="h-5 w-5 text-white"/></div>
+                                    <div>
+                                        <h3 className={`font-bold ${activeChat.id === 'admin' ? '' : 'text-white'}`}>Admin Chat</h3>
+                                        <p className={`text-xs ${activeChat.id === 'admin' ? 'text-brand-dark/70' : 'text-brand-text-dark'}`}>Admin only</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Private Messages */}
                         <h3 className="text-lg font-bold font-serif text-white mt-6 mb-2">Private Messages</h3>
                          {users.map(u => (
                             <div 
                                 key={u.id}
-                                onClick={() => setActiveChat({ id: u.id, name: u.fullName || u.email, isCommunity: false, avatar: u.avatarUrl || `https://ui-avatars.com/api/?name=${u.fullName || u.email}&background=2B2F36&color=EAEAEA` })}
+                                onClick={() => {
+                                    setActiveChat({ id: u.id, name: u.fullName || u.email, type: 'private', avatar: u.avatarUrl || `https://ui-avatars.com/api/?name=${u.fullName || u.email}&background=2B2F36&color=EAEAEA` });
+                                    setSidebarOpen(false);
+                                }}
                                 className={`p-3 rounded-md mb-2 cursor-pointer transition-colors ${activeChat.id === u.id ? 'bg-brand-gold text-brand-dark' : 'hover:bg-brand-muted'}`}
                             >
                                 <div className="flex items-center space-x-3">
@@ -154,15 +399,28 @@ const ChatPage: React.FC = () => {
                 <div className="flex-1 flex flex-col relative">
                     {/* Header */}
                     <div className="p-4 border-b border-brand-muted/50 flex items-center space-x-3">
-                        { !activeChat.isCommunity && activeChat.avatar && <img src={activeChat.avatar} className="h-10 w-10 rounded-full object-cover" /> }
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="md:hidden !p-2 text-white hover:bg-brand-muted"
+                            onClick={() => setSidebarOpen(true)}
+                        >
+                            <ICONS.Menu className="h-6 w-6" />
+                        </Button>
+                        { activeChat.type === 'private' && activeChat.avatar && <img src={activeChat.avatar} className="h-10 w-10 rounded-full object-cover" /> }
+                        { activeChat.type === 'admin' && <div className="p-2 bg-red-600 rounded-full"><ICONS.Shield className="h-6 w-6 text-white"/></div> }
+                        { activeChat.type === 'community' && <div className="p-2 bg-brand-muted rounded-full"><ICONS.Users className="h-6 w-6"/></div> }
                         <div>
                             <h2 className="text-xl font-bold text-white">{activeChat.name}</h2>
-                            <p className="text-sm text-brand-text-dark">{activeChat.isCommunity ? 'Global discussion for all members' : 'Private conversation'}</p>
+                            <p className="text-sm text-brand-text-dark">
+                                {activeChat.type === 'community' ? 'Global discussion for all members' : 
+                                 activeChat.type === 'admin' ? 'Admin-only discussion' : 'Private conversation'}
+                            </p>
                         </div>
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 p-6 overflow-y-auto" ref={messagesContainerRef} onScroll={handleScroll}>
+                    <div className="flex-1 p-6 overflow-y-auto bg-gradient-radial from-white/[0.03] via-transparent to-transparent" ref={messagesContainerRef} onScroll={handleScroll}>
                         {isLoadingMessages ? <div className="flex justify-center"><Spinner /></div> : (
                             <div className="space-y-1">
                                 {messages.length === 0 ? (
@@ -177,19 +435,73 @@ const ChatPage: React.FC = () => {
                                         const isMyMessage = msg.authorId === user?.id;
 
                                         return (
-                                            <div key={msg._id} className={`flex items-end gap-3 ${isMyMessage ? 'flex-row-reverse' : ''} ${isSameAuthor ? '' : 'mt-4'}`}>
-                                                <div className="w-8 flex-shrink-0">
+                                            <div 
+                                                key={`${msg._id}-${index}`} 
+                                                className={`flex items-end gap-2 md:gap-3 ${isMyMessage ? 'flex-row-reverse' : ''} ${isSameAuthor ? '' : 'mt-4'} group`}
+                                                onMouseEnter={() => setHoveredMessage(msg._id!)}
+                                                onMouseLeave={() => setHoveredMessage(null)}
+                                            >
+                                                <div className="w-6 md:w-8 flex-shrink-0">
                                                     {!isSameAuthor && (
-                                                        <img src={msg.authorAvatar || `https://ui-avatars.com/api/?name=${msg.authorName}&background=2B2F36&color=EAEAEA`} alt={msg.authorName} className="h-8 w-8 rounded-full object-cover"/>
+                                                        <img src={msg.authorAvatar || `https://ui-avatars.com/api/?name=${msg.authorName}&background=2B2F36&color=EAEAEA`} alt={msg.authorName} className="h-6 w-6 md:h-8 md:w-8 rounded-full object-cover"/>
                                                     )}
                                                 </div>
-                                                <div>
+                                                <div className="max-w-[75%] md:max-w-md relative">
                                                     {!isSameAuthor && !isMyMessage && <p className="text-xs text-brand-text-dark mb-1 ml-2">{msg.authorName}</p>}
-                                                    <div className={`max-w-md rounded-lg px-4 py-3 shadow relative ${isMyMessage ? 'bg-brand-gold text-brand-dark rounded-br-none' : 'bg-brand-muted text-white rounded-bl-none'}`}>
-                                                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                                                        {isMyMessage && (
-                                                            <div className="absolute -right-1.5 -bottom-1.5 text-brand-dark/60">
-                                                                <ICONS.CheckCheck className="w-5 h-5"/>
+                                                    
+                                                    {/* Message Actions */}
+                                                    {hoveredMessage === msg._id && (
+                                                        <div className={`absolute -top-8 ${isMyMessage ? 'right-0' : 'left-0'} flex gap-1 bg-black/80 rounded-full px-2 py-1 z-10`}>
+                                                            <button onClick={() => addReaction(msg._id!, '👍')} className="text-sm hover:scale-110 transition-transform">👍</button>
+                                                            <button onClick={() => addReaction(msg._id!, '❤️')} className="text-sm hover:scale-110 transition-transform">❤️</button>
+                                                            <button onClick={() => addReaction(msg._id!, '😂')} className="text-sm hover:scale-110 transition-transform">😂</button>
+                                                            <button onClick={() => setReplyingTo(msg)} className="text-white text-xs px-2 py-1 hover:bg-white/20 rounded transition-colors">Reply</button>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <div className={`rounded-[20px] px-4 md:px-5 py-3 md:py-4 relative transition-all duration-300 ${isMyMessage ? 'bg-gradient-to-br from-[#005BEA] to-[#003DAA] text-white shadow-[0px_20px_40px_-10px_rgba(0,0,0,0.4),0px_8px_15px_-5px_rgba(0,0,0,0.3),0px_4px_6px_-2px_rgba(0,0,0,0.2)]' : 'bg-gradient-to-br from-[#303238] to-[#222428] text-[#F5F5F5] border border-white/5 shadow-[0px_20px_40px_-10px_rgba(0,0,0,0.4),0px_8px_15px_-5px_rgba(0,0,0,0.3),0px_4px_6px_-2px_rgba(0,0,0,0.2)]'}`}>
+                                                        {/* Reply Preview */}
+                                                        {msg.replyTo && (
+                                                            <div className="mb-2 p-2 bg-black/20 rounded-lg border-l-2 border-white/30">
+                                                                <p className="text-xs opacity-70">{msg.replyTo.authorName}</p>
+                                                                <p className="text-sm opacity-80">{msg.replyTo.content}</p>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {msg.isImage ? (
+                                                            <img 
+                                                                src={msg.content} 
+                                                                alt="Shared image" 
+                                                                className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                                                onClick={() => setFullscreenImage(msg.content)}
+                                                            />
+                                                        ) : (
+                                                            <p className="text-base leading-relaxed whitespace-pre-wrap break-words font-medium">{msg.content}</p>
+                                                        )}
+                                                        <div className="flex items-center justify-end mt-2">
+                                                            <p className="text-xs font-medium opacity-60 mr-2">
+                                                                {formatTime(msg.created_at)}
+                                                            </p>
+                                                            {isMyMessage && (
+                                                                <div className="flex-shrink-0 opacity-80">
+                                                                    {getMessageStatusIcon(msg, isMyMessage)}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {/* Reactions */}
+                                                        {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                                                            <div className="flex gap-1 mt-1">
+                                                                {Object.entries(msg.reactions).map(([emoji, data]) => (
+                                                                    <button
+                                                                        key={emoji}
+                                                                        onClick={() => addReaction(msg._id!, emoji)}
+                                                                        className="bg-black/20 rounded-full px-2 py-1 text-xs flex items-center gap-1 hover:bg-black/30 transition-colors"
+                                                                    >
+                                                                        <span>{emoji}</span>
+                                                                        <span>{data.count}</span>
+                                                                    </button>
+                                                                ))}
                                                             </div>
                                                         )}
                                                     </div>
@@ -222,16 +534,71 @@ const ChatPage: React.FC = () => {
                     {showScrollToBottom && (
                         <Button
                             onClick={() => scrollToBottom()}
-                            className="absolute bottom-24 right-8 rounded-full !p-3 shadow-lg"
+                            className="absolute bottom-24 right-8 rounded-full !p-3 bg-gradient-to-br from-[#303238] to-[#222428] border border-white/5 shadow-[0px_20px_40px_-10px_rgba(0,0,0,0.4),0px_8px_15px_-5px_rgba(0,0,0,0.3),0px_4px_6px_-2px_rgba(0,0,0,0.2)] text-[#F5F5F5] hover:from-[#005BEA] hover:to-[#003DAA] transition-all duration-300"
                         >
                             <ICONS.ChevronDown className="h-6 w-6" />
                         </Button>
                     )}
 
                     {/* Input */}
-                    <div className="p-4 border-t border-brand-muted/50">
+                    <div className="p-4 border-t border-brand-muted/50 relative">
+                        {/* Emoji Picker */}
+                        {showEmojiPicker && (
+                            <div ref={emojiPickerRef} className="absolute bottom-20 left-4 z-50">
+                                <EmojiPicker
+                                    onEmojiClick={onEmojiClick}
+                                    theme="dark"
+                                    width={350}
+                                    height={450}
+                                    emojiStyle="apple"
+                                    previewConfig={{
+                                        showPreview: false
+                                    }}
+                                    skinTonesDisabled
+                                    searchDisabled={false}
+                                    suggestedEmojisMode="recent"
+                                />
+                            </div>
+                        )}
+                        
+                        {/* Reply Preview */}
+                        {replyingTo && (
+                            <div className="mb-2 p-3 bg-brand-muted/50 rounded-lg border-l-4 border-brand-gold flex justify-between items-center">
+                                <div>
+                                    <p className="text-xs text-brand-text-dark">Replying to {replyingTo.authorName}</p>
+                                    <p className="text-sm text-white">{replyingTo.isImage ? 'Image' : replyingTo.content.slice(0, 50)}...</p>
+                                </div>
+                                <button onClick={() => setReplyingTo(null)} className="text-brand-text-dark hover:text-white">
+                                    <ICONS.X className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
+                        
                         <div className="flex items-center space-x-3 bg-brand-dark rounded-full px-2">
-                             <Button variant="ghost" size="sm" className="rounded-full !p-2 text-brand-text-dark hover:text-white" aria-label="Add emoji">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="rounded-full !p-2 text-brand-text-dark hover:text-white" 
+                                aria-label="Upload image"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploadingImage}
+                            >
+                                <ICONS.UploadCloud className="h-6 w-6" />
+                            </Button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                            />
+                             <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="rounded-full !p-2 text-brand-text-dark hover:text-white" 
+                                aria-label="Add emoji"
+                                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                            >
                                 <ICONS.Smile className="h-6 w-6" />
                             </Button>
                             <input
@@ -240,17 +607,61 @@ const ChatPage: React.FC = () => {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                                 placeholder={`Message ${activeChat.name}...`}
-                                className="flex-1 bg-transparent border-none py-3 px-2 text-white placeholder-gray-500 focus:ring-0"
+                                className="flex-1 bg-transparent border-none py-3 px-2 text-white placeholder-gray-500 focus:ring-0 focus:outline-none"
                                 disabled={sendMessageMutation.isPending}
                             />
-                            <Button onClick={handleSendMessage} isLoading={sendMessageMutation.isPending} size="sm" className="rounded-full !p-3.5">
-                                <ICONS.Send className="h-5 w-5" />
+                            <Button onClick={handleSendMessage} isLoading={sendMessageMutation.isPending} variant="ghost" size="sm" className="rounded-full !p-2 text-brand-text-dark hover:text-white">
+                                <ICONS.Send className="h-6 w-6" />
                             </Button>
                         </div>
                     </div>
                 </div>
+                
+                {/* Fullscreen Image Viewer */}
+                {fullscreenImage && (
+                    <div 
+                        className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4"
+                        onClick={() => setFullscreenImage(null)}
+                    >
+                        <div className="relative max-w-full max-h-full">
+                            <img 
+                                src={fullscreenImage} 
+                                alt="Fullscreen view" 
+                                className="max-w-full max-h-full object-contain"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="absolute top-4 right-4 !p-2 bg-black/50 hover:bg-black/70 text-white rounded-full"
+                                onClick={() => setFullscreenImage(null)}
+                            >
+                                <ICONS.X className="h-6 w-6" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
             <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+                
+                /* Premium Scrollbar Styling */
+                ::-webkit-scrollbar {
+                    width: 8px;
+                }
+                ::-webkit-scrollbar-track {
+                    background: linear-gradient(145deg, #1a1d23, #0f1115);
+                    border-radius: 10px;
+                }
+                ::-webkit-scrollbar-thumb {
+                    background: linear-gradient(145deg, #303238, #222428);
+                    border-radius: 10px;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                }
+                ::-webkit-scrollbar-thumb:hover {
+                    background: linear-gradient(145deg, #005BEA, #003DAA);
+                }
+                
                 .typing-indicator {
                     display: flex;
                     align-items: center;

@@ -72,6 +72,26 @@ export interface ChatMessage {
   content: string;
   // For private messages
   recipientId?: string | null;
+  // Chat type
+  chatType?: 'community' | 'admin' | 'private';
+  // Message status
+  delivered?: boolean;
+  read?: boolean;
+  // Image message
+  isImage?: boolean;
+  // Reply functionality
+  replyTo?: {
+    messageId: string;
+    content: string;
+    authorName: string;
+  };
+  // Reactions
+  reactions?: {
+    [emoji: string]: {
+      count: number;
+      users: string[];
+    };
+  };
 }
 
 export interface ContactMessage {
