@@ -6,6 +6,9 @@ import { useAuth } from '../../hooks/useAuth';
 import Spinner from '../../components/ui/Spinner';
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from '../../hooks/useApi';
+import UserGrowthChart from '../../components/admin/UserGrowthChart';
+import UpcomingEvents from '../../components/admin/UpcomingEvents';
+import CampusProgress from '../../components/admin/CampusProgress';
 
 interface AdminStats {
   users: number;
@@ -32,12 +35,9 @@ const AdminDashboard: React.FC = () => {
   });
 
   const statItems = [
-    { name: 'Total Users', value: stats.users, icon: <ICONS.Users className="h-8 w-8 text-brand-gold" /> },
     { name: 'Leaders', value: stats.leaders, icon: <ICONS.Shield className="h-8 w-8 text-brand-gold" /> },
-    { name: `Campuses (${stats.campusApplications} pending)`, value: stats.lightCampuses, icon: <ICONS.Home className="h-8 w-8 text-brand-gold" /> },
     { name: 'Blog Posts', value: stats.blogPosts, icon: <ICONS.FileText className="h-8 w-8 text-brand-gold" /> },
     { name: 'Teachings', value: stats.teachings, icon: <ICONS.BookOpen className="h-8 w-8 text-brand-gold" /> },
-    { name: 'Events', value: stats.events, icon: <ICONS.Calendar className="h-8 w-8 text-brand-gold" /> },
     { name: 'Prayer Requests', value: stats.prayers, icon: <ICONS.Heart className="h-8 w-8 text-brand-gold" /> },
     { name: 'Testimonies', value: stats.testimonies, icon: <ICONS.Quote className="h-8 w-8 text-brand-gold" /> },
     { name: 'Ministry Teams', value: stats.ministryTeams, icon: <ICONS.HeartHandshake className="h-8 w-8 text-brand-gold" /> },
@@ -63,8 +63,7 @@ const AdminDashboard: React.FC = () => {
     return <div className="flex justify-center items-center h-64"><Spinner /></div>
   }
 
-  const primaryStats = statItems.slice(0, 4);
-  const secondaryStats = statItems.slice(4);
+  const secondaryStats = statItems;
 
   return (
     <div className="space-y-12">
@@ -92,21 +91,14 @@ const AdminDashboard: React.FC = () => {
       `}</style>
       
       {/* Primary Stats Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {primaryStats.map((stat, index) => (
-          <div key={stat.name} className={`dashboard-card ${index < 2 ? 'primary-card' : ''} rounded-2xl p-6 flex flex-col space-y-4`}>
-            <div className="flex items-center justify-between">
-              <div className="p-3 rounded-xl bg-white/10">
-                {React.cloneElement(stat.icon, { className: 'h-6 w-6 text-blue-400' })}
-              </div>
-              {index < 2 && <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>}
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
-              <p className="text-sm font-medium text-gray-300">{stat.name}</p>
-            </div>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <UserGrowthChart />
+        </div>
+        <div className="space-y-6">
+          <UpcomingEvents />
+          <CampusProgress pending={stats.campusApplications} total={stats.campusApplications + stats.lightCampuses} />
+        </div>
       </div>
 
       {/* Secondary Stats */}

@@ -1,7 +1,5 @@
 
 
-import { ObjectId } from 'mongodb';
-
 export enum UserRole {
   USER = 'User',
   ADMIN = 'Admin',
@@ -165,6 +163,7 @@ export interface LightCampus {
   leaderName: string;
   contactInfo: string;
   meetingSchedule: string;
+  imageUrl?: string;
   isActive: boolean;
   createdAt: string;
 }
@@ -174,11 +173,12 @@ export interface LightCampusApplication {
   applicantUserId: string;
   applicantName: string;
   applicantEmail: string;
-  proposedCampusName: string;
-  proposedLocation: string;
+  avatarUrl?: string;
+  name: string;
+  location: string;
+  description: string;
   proposedLeaderName: string;
   contactInfo: string;
-  missionStatement: string;
   status: 'Pending' | 'Approved' | 'Rejected';
   createdAt: string;
 }

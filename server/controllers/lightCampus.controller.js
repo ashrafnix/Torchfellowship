@@ -33,7 +33,9 @@ export const applyForCampus = async (req, res, next) => {
             proposedLeaderName,
             contactInfo,
             userId: user._id.toHexString(),
-            userName: user.fullName || user.email,
+            applicantName: user.fullName,
+            applicantEmail: user.email,
+            avatarUrl: user.avatarUrl,
             status: 'Pending',
             createdAt: new Date().toISOString(),
         };
@@ -58,17 +60,20 @@ export const getAllCampusesAdmin = async (req, res, next) => {
 export const createCampusAdmin = async (req, res, next) => {
     try {
         const db = getDb();
-        const { name, location, description } = req.body;
+        const { name, location, leaderName, contactInfo, meetingSchedule, isActive, imageUrl } = req.body;
 
-        if (!name || !location || !description) {
-            return next(new AppError('Name, location, and description are required.', 400));
+        if (!name || !location || !leaderName) {
+            return next(new AppError('Name, location, and leader name are required.', 400));
         }
 
         const newCampus = {
             name,
             location,
-            description,
-            isActive: true,
+            leaderName,
+            contactInfo,
+            meetingSchedule,
+            isActive: isActive !== false,
+            imageUrl,
             createdAt: new Date().toISOString(),
         };
 
@@ -84,14 +89,14 @@ export const createCampusAdmin = async (req, res, next) => {
 export const updateCampusAdmin = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name, location, description, isActive } = req.body;
+        const { name, location, description, isActive, imageUrl } = req.body;
 
         if (!ObjectId.isValid(id)) {
             return next(new AppError('Invalid campus ID.', 400));
         }
 
         const db = getDb();
-        const updatedFields = { name, location, description, isActive };
+        const updatedFields = { name, location, description, isActive, imageUrl };
 
         const result = await db.collection('light_campuses').updateOne(
             { _id: new ObjectId(id) },
@@ -137,7 +142,7 @@ export const getAllApplicationsAdmin = async (req, res, next) => {
             .find({})
             .sort({ createdAt: -1 })
             .toArray();
-        res.status(200).json(applications);
+        res.status(200).json(applications.map(formatCampusForClient));
     } catch (error) {
         next(new AppError('Failed to fetch light campus applications.', 500));
     }

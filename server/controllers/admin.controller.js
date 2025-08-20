@@ -20,3 +20,39 @@ export const getDashboardStats = async (req, res, next) => {
         next(new AppError('Failed to fetch dashboard statistics.', 500));
     }
 };
+
+export const getUserGrowthStats = async (req, res, next) => {
+    try {
+        const db = getDb();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const userGrowth = await db.collection('users').aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: thirtyDaysAgo.toISOString() }
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: { $toDate: "$createdAt" } } },
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            },
+            {
+                $project: {
+                    date: "$_id",
+                    count: 1,
+                    _id: 0
+                }
+            }
+        ]).toArray();
+
+        res.status(200).json(userGrowth);
+    } catch (error) {
+        next(new AppError('Failed to fetch user growth statistics.', 500));
+    }
+};

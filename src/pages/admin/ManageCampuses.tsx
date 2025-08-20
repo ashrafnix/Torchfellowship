@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { LightCampus, LightCampusApplication } from '../../types.ts';
-import Button from '../../components/ui/Button.tsx';
-import Modal from '../../components/ui/Modal.tsx';
-import { ICONS } from '../../constants.tsx';
-import Spinner from '../../components/ui/Spinner.tsx';
-import Input from '../../components/ui/Input.tsx';
+import { LightCampus, LightCampusApplication } from '../../types';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
+import { ICONS } from '../../constants';
+import Spinner from '../../components/ui/Spinner';
+import Input from '../../components/ui/Input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
+import { useApi } from '../../hooks/useApi';
 import { toast } from 'react-toastify';
 
 type ActiveTab = 'applications' | 'campuses';
@@ -110,11 +110,14 @@ const ManageCampuses: React.FC = () => {
                             {applications.length > 0 ? applications.map(app => (
                                 <div key={app._id} className="bg-brand-dark p-4 rounded-md border border-brand-muted">
                                     <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="text-sm text-brand-text-dark">Applicant: <span className="font-bold text-white">{app.applicantName} ({app.applicantEmail})</span></p>
-                                            <h3 className="text-lg font-bold text-brand-gold mt-1">{app.proposedCampusName}</h3>
-                                            <p className="text-white mt-4 italic">"{app.missionStatement}"</p>
-                                        </div>
+                                        <div className="flex items-center space-x-4">
+                                           <img src={app.avatarUrl || `https://ui-avatars.com/api/?name=${app.applicantName}&background=0D8ABC&color=fff`} alt={app.applicantName} className="w-12 h-12 rounded-full" />
+                                           <div>
+                                               <p className="text-sm text-brand-text-dark">Proposed Leader: <span className="font-bold text-white">{app.proposedLeaderName} ({app.contactInfo})</span></p>
+                                               <h3 className="text-lg font-bold text-brand-gold mt-1">{app.name}</h3>
+                                               <p className="text-white mt-4 italic">"{app.description}"</p>
+                                           </div>
+                                       </div>
                                         <div className="text-right">
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ app.status === 'Approved' ? 'bg-green-500/20 text-green-400' : app.status === 'Rejected' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
                                                 {app.status}
@@ -147,7 +150,7 @@ const ManageCampuses: React.FC = () => {
                                         </div>
                                         <div className="flex items-center space-x-3">
                                             <Button size="sm" variant="secondary" onClick={() => handleOpenModal(campus)}>Edit</Button>
-                                            <button onClick={() => handleDeleteCampus(campus._id!)} className="text-red-500 hover:text-red-400 p-2 rounded-md hover:bg-red-500/10"><ICONS.Trash2 className="w-5 h-5"/></button>
+                                            <button title="Delete Campus" onClick={() => handleDeleteCampus(campus._id!)} className="text-red-500 hover:text-red-400 p-2 rounded-md hover:bg-red-500/10"><ICONS.Trash2 className="w-5 h-5"/></button>
                                         </div>
                                     </div>
                                 )) : <p className="text-center py-10 text-brand-text-dark">No campuses created yet.</p>}
