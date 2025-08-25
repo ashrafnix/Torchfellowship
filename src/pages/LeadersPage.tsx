@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Leader } from '../types.ts';
-import Spinner from '../components/ui/Spinner.tsx';
-import Modal from '../components/ui/Modal.tsx';
-import Button from '../components/ui/Button.tsx';
-import { ICONS } from '../constants.tsx';
+import { Leader } from '../types';
+import Spinner from '../components/ui/Spinner';
+import Modal from '../components/ui/Modal';
+import Button from '../components/ui/Button';
+import { ICONS } from '../constants';
 import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 
 const LeadersPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

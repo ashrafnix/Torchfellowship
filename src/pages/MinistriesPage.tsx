@@ -1,12 +1,12 @@
 import React from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { Link } = ReactRouterDOM as any;
-import { MinistryTeam } from '../types.ts';
-import Spinner from '../components/ui/Spinner.tsx';
-import Button from '../components/ui/Button.tsx';
-import { ICONS } from '../constants.tsx';
+import { MinistryTeam } from '../types';
+import Spinner from '../components/ui/Spinner';
+import Button from '../components/ui/Button';
+import { ICONS } from '../constants';
 import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 
 const MinistriesPage: React.FC = () => {
   const { apiClient } = useApi();

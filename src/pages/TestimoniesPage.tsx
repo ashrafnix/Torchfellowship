@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import Button from '../components/ui/Button.tsx';
-import Input from '../components/ui/Input.tsx';
-import Spinner from '../components/ui/Spinner.tsx';
-import { Testimony } from '../types.ts';
-import { ICONS } from '../constants.tsx';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Spinner from '../components/ui/Spinner';
+import { Testimony } from '../types';
+import { ICONS } from '../constants';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 import { toast } from 'react-toastify';
 
 const TestimoniesPage: React.FC = () => {

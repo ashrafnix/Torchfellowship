@@ -28,11 +28,8 @@
   background: #141417; /* brand-surface */
 }
 
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #2B2F36 #141417; /* thumb-color track-color */
-}
+/* Firefox fallback - using supported properties only */
+/* Note: Modern Firefox supports webkit scrollbar properties */
 
 /* For containers with specific theme classes */
 .bg-brand-dark ::-webkit-scrollbar-track,

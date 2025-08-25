@@ -262,6 +262,15 @@ export interface DBBlog {
   publishedAt?: string;
 }
 
+export interface MediaAsset {
+  url: string;
+  publicId: string;
+  alt?: string;
+  caption?: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
 export interface LightCampus {
   _id?: string;
   name: string;
@@ -269,6 +278,8 @@ export interface LightCampus {
   leaderName: string;
   contactInfo: string;
   meetingSchedule: string;
+  imageUrl?: string;
+  images?: MediaAsset[]; // Array of campus images
   isActive: boolean;
   createdAt: string;
 }
@@ -280,6 +291,8 @@ export interface DBLightCampus {
   leaderName: string;
   contactInfo: string;
   meetingSchedule: string;
+  imageUrl?: string;
+  images?: MediaAsset[]; // Array of campus images
   isActive: boolean;
   createdAt: string;
 }

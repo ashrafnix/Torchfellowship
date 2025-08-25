@@ -13,15 +13,18 @@ const Belief: React.FC<{ title: string; description: string }> = ({ title, descr
     return (
         <div className="border-b border-brand-muted/50">
             <button
+                type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex justify-between items-center py-5 text-left text-lg font-semibold text-white hover:text-brand-gold transition-colors"
-                aria-expanded={isOpen}
+                aria-expanded={isOpen ? 'true' : 'false'}
+                aria-controls={`belief-content-${title.replace(/\s+/g, '-').toLowerCase()}`}
             >
                 <span>{title}</span>
                 <ICONS.ChevronDown className={`w-6 h-6 transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             <div
                 className={`grid transition-all duration-500 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                id={`belief-content-${title.replace(/\s+/g, '-').toLowerCase()}`}
             >
                 <div className="overflow-hidden">
                     <p className="pb-5 text-brand-text-dark">{description}</p>

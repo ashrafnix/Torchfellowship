@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { Link } = ReactRouterDOM as any;
 import type { BlogPost } from '../../types.ts';
-import Button from '../../components/ui/Button.tsx';
-import Modal from '../../components/ui/Modal.tsx';
-import { ICONS } from '../../constants.tsx';
-import Spinner from '../../components/ui/Spinner.tsx';
-import Input from '../../components/ui/Input.tsx';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
+import { ICONS } from '../../constants';
+import Spinner from '../../components/ui/Spinner';
+import Input from '../../components/ui/Input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
-import { uploadImage } from '../../services/uploadService.ts';
+import { useApi } from '../../hooks/useApi';
+import { uploadImage } from '../../services/uploadService';
 import { toast } from 'react-toastify';
 
 const ManageBlog: React.FC = () => {

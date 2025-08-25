@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { Link } = ReactRouterDOM as any;
 import type { BlogPost } from '../types.ts';
-import Spinner from '../components/ui/Spinner.tsx';
-import { ICONS } from '../constants.tsx';
+import Spinner from '../components/ui/Spinner';
+import { ICONS } from '../constants';
 import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 
 const BlogListPage: React.FC = () => {
   const { apiClient } = useApi();

@@ -45,7 +45,7 @@ const Footer: React.FC = () => {
                         <h3 className="text-lg font-serif font-bold text-white">CONTACT US</h3>
                         <address className="mt-4 space-y-3 text-sm text-brand-text-dark not-italic">
                             <p>Light Grounds, Mutundwe, Uganda</p>
-                            <p><a href="mailto:torchfellowship@gmail.com" className="hover:text-brand-gold transition-colors">torchfellowship@gmail.com</a></p>
+                            <p><a href="mailto:info@torchfellowship.org" className="hover:text-brand-gold transition-colors">info@torchfellowship.org</a></p>
                             <p><a href="tel:+256778436768" className="hover:text-brand-gold transition-colors">+256 (778) 436-768</a></p>
                         </address>
                     </div>

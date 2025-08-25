@@ -1,8 +1,8 @@
 import React from 'react';
-import { ICONS } from '../constants.tsx';
+import { ICONS } from '../constants';
 import type { TorchKidsContent } from '../types.ts';
 import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 
 const defaultTorchKidsContent: TorchKidsContent = {
     heroTitle: "Welcome to Torch Kids",

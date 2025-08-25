@@ -1,9 +1,9 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { BlogPost } from '../types.ts';
-import Spinner from '../components/ui/Spinner.tsx';
+import Spinner from '../components/ui/Spinner';
 import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 
 const BlogPostPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();

@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import Button from '../components/ui/Button.tsx';
-import Input from '../components/ui/Input.tsx';
-import { ICONS } from '../constants.tsx';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import { ICONS } from '../constants';
 
 const CommunitiesPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);

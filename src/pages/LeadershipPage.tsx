@@ -3,8 +3,8 @@
 import React from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { Link } = ReactRouterDOM as any;
-import { ICONS } from '../constants.tsx';
-import Button from '../components/ui/Button.tsx';
+import { ICONS } from '../constants';
+import Button from '../components/ui/Button';
 
 const LeadershipPage: React.FC = () => {
     return (

@@ -99,7 +99,7 @@ const LightCampusesPage: React.FC = () => {
                                                     src={campus.images[0].url} 
                                                     alt={campus.images[0].alt || campus.name}
                                                     className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                                    onClick={() => openImageModal(campus.images[0].url)}
+                                                    onClick={() => openImageModal(campus.images?.[0]?.url || '')}
                                                 />
                                                 {campus.images.length > 1 && (
                                                     <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded-lg text-sm">
@@ -121,7 +121,7 @@ const LightCampusesPage: React.FC = () => {
                                                     {campus.images.length > 4 && (
                                                         <div 
                                                             className="w-16 h-16 bg-brand-dark border border-brand-muted rounded cursor-pointer flex items-center justify-center hover:bg-brand-muted/20 transition-colors flex-shrink-0"
-                                                            onClick={() => openImageModal(campus.images[4].url)}
+                                                            onClick={() => openImageModal(campus.images?.[4]?.url || '')}
                                                         >
                                                             <span className="text-xs text-brand-text-dark">+{campus.images.length - 4}</span>
                                                         </div>

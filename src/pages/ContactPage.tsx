@@ -1,9 +1,9 @@
 import React from 'react';
-import Button from '../components/ui/Button.tsx';
-import Input from '../components/ui/Input.tsx';
-import { ICONS } from '../constants.tsx';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import { ICONS } from '../constants';
 import { useMutation } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 import { toast } from 'react-toastify';
 
 const ContactPage: React.FC = () => {
@@ -68,7 +68,7 @@ const ContactPage: React.FC = () => {
                         <h3 className="text-2xl font-serif font-bold text-white">Get in Touch</h3>
                          <address className="mt-4 space-y-4 text-brand-text-dark not-italic">
                             <p className="flex items-start"><strong className="w-20 text-brand-gold">Address:</strong><span>Light Grounds, Mutundwe, Uganda</span></p>
-                            <p className="flex items-start"><strong className="w-20 text-brand-gold">Email:</strong><a href="mailto:torchfellowship@gmail.com" className="hover:text-brand-gold">torchfellowship@gmail.com</a></p>
+                            <p className="flex items-start"><strong className="w-20 text-brand-gold">Email:</strong><a href="mailto:info@torchfellowship.org" className="hover:text-brand-gold">info@torchfellowship.org</a></p>
                             <p className="flex items-start"><strong className="w-20 text-brand-gold">Phone:</strong><a href="tel:+256778436768" className="hover:text-brand-gold">+256 (778) 436-768</a></p>
                         </address>
                     </div>

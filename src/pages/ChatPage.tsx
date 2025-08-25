@@ -34,7 +34,7 @@ const ChatPage: React.FC = () => {
     const [unreadCounts, setUnreadCounts] = useState<{ [chatId: string]: number }>({});
     const [lastActivity, setLastActivity] = useState<{ [userId: string]: number }>({});
     
-    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const typingTimeoutRef = useRef<number | null>(null);
     const lastTypingEmitRef = useRef<number>(0);
     
     const messagesContainerRef = useRef<HTMLDivElement>(null);

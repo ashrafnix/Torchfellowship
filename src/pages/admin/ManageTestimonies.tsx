@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Testimony } from '../../types.ts';
-import Spinner from '../../components/ui/Spinner.tsx';
-import Button from '../../components/ui/Button.tsx';
+import { Testimony } from '../../types';
+import Spinner from '../../components/ui/Spinner';
+import Button from '../../components/ui/Button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
+import { useApi } from '../../hooks/useApi';
 import { toast } from 'react-toastify';
 
 const ManageTestimonies: React.FC = () => {
