@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { MinistryTeam, VolunteerApplication } from '../../types.ts';
-import Button from '../../components/ui/Button.tsx';
-import Modal from '../../components/ui/Modal.tsx';
-import { ICONS } from '../../constants.tsx';
-import Spinner from '../../components/ui/Spinner.tsx';
-import Input from '../../components/ui/Input.tsx';
+import { MinistryTeam, VolunteerApplication } from '../../types';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
+import { ICONS } from '../../constants';
+import Spinner from '../../components/ui/Spinner';
+import Input from '../../components/ui/Input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
-import { uploadImage } from '../../services/uploadService.ts';
+import { useApi } from '../../hooks/useApi';
+import { uploadImage } from '../../services/uploadService';
 import { toast } from 'react-toastify';
 
 type ActiveTab = 'teams' | 'applications';
@@ -147,7 +147,7 @@ const ManageServe: React.FC = () => {
                                         </div>
                                         <div className="flex items-center space-x-3">
                                             <Button size="sm" variant="secondary" onClick={() => handleOpenModal(team)}>Edit</Button>
-                                            <button onClick={() => handleDeleteTeam(team._id!)} className="text-red-500 hover:text-red-400 p-2 rounded-md hover:bg-red-500/10"><ICONS.Trash2 className="w-5 h-5"/></button>
+                                            <button type="button" onClick={() => handleDeleteTeam(team._id!)} className="text-red-500 hover:text-red-400 p-2 rounded-md hover:bg-red-500/10" title="Delete team"><ICONS.Trash2 className="w-5 h-5"/></button>
                                         </div>
                                     </div>
                                 )) : <p className="text-center py-10 text-brand-text-dark">No teams created yet.</p>}
@@ -195,7 +195,15 @@ const ManageServe: React.FC = () => {
                         <div className="relative">
                             <img src={photoPreview || 'https://via.placeholder.com/100x100.png/2B2F36/EAEAEA?text=Photo'} alt="Preview" className="w-24 h-24 rounded-md object-cover"/>
                             <label htmlFor="photo-upload" className="absolute -bottom-1 -right-1 bg-brand-gold text-brand-dark p-1.5 rounded-full cursor-pointer hover:bg-brand-gold-dark">
-                                <ICONS.Edit className="w-4 h-4" /><input id="photo-upload" type="file" className="sr-only" accept="image/*" onChange={handlePhotoChange} />
+                                <ICONS.Edit className="w-4 h-4" />
+                                <input 
+                                    id="photo-upload" 
+                                    type="file" 
+                                    className="sr-only" 
+                                    accept="image/*" 
+                                    onChange={handlePhotoChange}
+                                    aria-label="Upload team photo"
+                                />
                             </label>
                         </div>
                         <div className="flex-grow"><Input label="Team Name" name="name" value={formState.name || ''} onChange={handleInputChange} required /></div>

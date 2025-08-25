@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import type { TorchKidsContent } from '../../types.ts';
-import Spinner from '../../components/ui/Spinner.tsx';
-import Button from '../../components/ui/Button.tsx';
+import type { TorchKidsContent } from '../../types';
+import Spinner from '../../components/ui/Spinner';
+import Button from '../../components/ui/Button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
+import { useApi } from '../../hooks/useApi';
 import { toast } from 'react-toastify';
 
 const ManageTorchKids: React.FC = () => {
@@ -50,6 +50,8 @@ const ManageTorchKids: React.FC = () => {
         <div>
             <label className="block text-sm font-medium text-brand-text-dark mb-1">{label}</label>
             <textarea
+                title={label}
+                placeholder={`Enter ${label.toLowerCase()}`}
                 name={name}
                 rows={rows}
                 value={content[name] || ''}
@@ -63,6 +65,8 @@ const ManageTorchKids: React.FC = () => {
          <div>
             <label className="block text-sm font-medium text-brand-text-dark mb-1">{label}</label>
             <input
+                title={label}
+                placeholder={`Enter ${label.toLowerCase()}`}
                 type="text"
                 name={name}
                 value={content[name] || ''}

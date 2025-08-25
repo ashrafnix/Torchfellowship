@@ -1,6 +1,6 @@
 import React from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
-const { Link } = ReactRouterDOM as any;
+const { Link, useNavigate } = ReactRouterDOM as any;
 import { ICONS } from '../../constants';
 import { useAuth } from '../../hooks/useAuth';
 import Spinner from '../../components/ui/Spinner';
@@ -9,6 +9,8 @@ import { useApi } from '../../hooks/useApi';
 import UserGrowthChart from '../../components/admin/UserGrowthChart';
 import UpcomingEvents from '../../components/admin/UpcomingEvents';
 import CampusProgress from '../../components/admin/CampusProgress';
+import MinistryTeamsOverview from '../../components/admin/MinistryTeamsOverview';
+import PrayerRequestsOverview from '../../components/admin/PrayerRequestsOverview';
 
 interface AdminStats {
   users: number;
@@ -20,27 +22,87 @@ interface AdminStats {
   ministryTeams: number;
   blogPosts: number;
   lightCampuses: number;
-  campusApplications: number;
+  campusApplications: {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+  };
+  trends?: {
+    leaders: string;
+    blogPosts: string;
+    teachings: string;
+    testimonies: string;
+  };
 }
 
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
   const { apiClient } = useApi();
+  const navigate = useNavigate();
 
-  const { data: stats, isLoading } = useQuery<AdminStats>({
+  const { data: stats, isLoading, error } = useQuery<AdminStats>({
     queryKey: ['adminStats'],
     queryFn: () => apiClient('/api/admin/stats', 'GET'),
+    refetchInterval: 30000, // Refresh every 30 seconds for real-time updates
+    staleTime: 15000, // Consider data stale after 15 seconds
+    retry: 1,
     // Default empty stats object
-    initialData: { users: 0, teachings: 0, events: 0, prayers: 0, leaders: 0, testimonies: 0, ministryTeams: 0, blogPosts: 0, lightCampuses: 0, campusApplications: 0 }
+    initialData: { 
+      users: 0, 
+      teachings: 0, 
+      events: 0, 
+      prayers: 0, 
+      leaders: 0, 
+      testimonies: 0, 
+      ministryTeams: 0, 
+      blogPosts: 0, 
+      lightCampuses: 0, 
+      campusApplications: {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0
+      },
+      trends: {
+        leaders: 'No data',
+        blogPosts: 'No data', 
+        teachings: 'No data',
+        testimonies: 'No data'
+      }
+    }
   });
 
+  // Simplified stat items for the remaining cards with navigation paths
   const statItems = [
-    { name: 'Leaders', value: stats.leaders, icon: <ICONS.Shield className="h-8 w-8 text-brand-gold" /> },
-    { name: 'Blog Posts', value: stats.blogPosts, icon: <ICONS.FileText className="h-8 w-8 text-brand-gold" /> },
-    { name: 'Teachings', value: stats.teachings, icon: <ICONS.BookOpen className="h-8 w-8 text-brand-gold" /> },
-    { name: 'Prayer Requests', value: stats.prayers, icon: <ICONS.Heart className="h-8 w-8 text-brand-gold" /> },
-    { name: 'Testimonies', value: stats.testimonies, icon: <ICONS.Quote className="h-8 w-8 text-brand-gold" /> },
-    { name: 'Ministry Teams', value: stats.ministryTeams, icon: <ICONS.HeartHandshake className="h-8 w-8 text-brand-gold" /> },
+    { 
+      name: 'Leaders', 
+      value: stats.leaders, 
+      icon: <ICONS.Shield className="h-8 w-8 text-brand-gold" />, 
+      trend: stats.trends?.leaders || 'No data',
+      path: '/admin/leaders'
+    },
+    { 
+      name: 'Blog Posts', 
+      value: stats.blogPosts, 
+      icon: <ICONS.FileText className="h-8 w-8 text-brand-gold" />, 
+      trend: stats.trends?.blogPosts || 'No data',
+      path: '/admin/blog'
+    },
+    { 
+      name: 'Teachings', 
+      value: stats.teachings, 
+      icon: <ICONS.BookOpen className="h-8 w-8 text-brand-gold" />, 
+      trend: stats.trends?.teachings || 'No data',
+      path: '/admin/teachings'
+    },
+    { 
+      name: 'Testimonies', 
+      value: stats.testimonies, 
+      icon: <ICONS.Quote className="h-8 w-8 text-brand-gold" />, 
+      trend: stats.trends?.testimonies || 'No data',
+      path: '/admin/testimonies'
+    },
   ];
 
   const managementLinks = [
@@ -90,27 +152,67 @@ const AdminDashboard: React.FC = () => {
         }
       `}</style>
       
-      {/* Primary Stats Section */}
+      {/* Primary Visualization Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <UserGrowthChart />
         </div>
         <div className="space-y-6">
           <UpcomingEvents />
-          <CampusProgress pending={stats.campusApplications} total={stats.campusApplications + stats.lightCampuses} />
+          <CampusProgress pending={stats.campusApplications.pending} total={stats.campusApplications.total} />
         </div>
       </div>
 
-      {/* Secondary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Live Data Indicator */}
+      {!error && stats && (
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex items-center px-4 py-2 bg-green-500/20 text-green-400 rounded-full text-sm font-medium">
+            <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+            Real-time Dashboard - Auto-refreshing every 30s
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex items-center px-4 py-2 bg-yellow-500/20 text-yellow-400 rounded-full text-sm font-medium">
+            <div className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></div>
+            Using cached data - Check connection
+          </div>
+        </div>
+      )}
+
+      {/* Secondary Rich Visualizations */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MinistryTeamsOverview />
+        <PrayerRequestsOverview />
+      </div>
+
+      {/* Compact Stat Cards for Supporting Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {secondaryStats.map(stat => (
-          <div key={stat.name} className="dashboard-card rounded-xl p-4 flex flex-col items-center text-center space-y-3">
-            <div className="p-2 rounded-lg bg-white/5">
-              {React.cloneElement(stat.icon, { className: 'h-5 w-5 text-gray-400' })}
+          <div 
+            key={stat.name} 
+            className="dashboard-card rounded-xl p-4 flex flex-col space-y-3 hover:scale-105 transition-transform cursor-pointer group relative"
+            onClick={() => navigate(stat.path)}
+          >
+            {/* Live indicator */}
+            {!error && stats && (
+              <div className="absolute top-2 right-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              </div>
+            )}
+            <div className="flex items-center justify-between">
+              <div className="p-2 rounded-lg bg-white/5 group-hover:bg-blue-500/20 transition-colors">
+                {React.cloneElement(stat.icon, { className: 'h-5 w-5 text-gray-400 group-hover:text-blue-400 transition-colors' })}
+              </div>
+              <div className="text-xs text-green-400 font-medium">{stat.trend}</div>
             </div>
             <div>
-              <p className="text-xl font-bold text-white">{stat.value}</p>
-              <p className="text-xs text-gray-400">{stat.name}</p>
+              <p className="text-2xl font-bold text-white">{stat.value}</p>
+              <p className="text-sm text-gray-400 group-hover:text-white transition-colors">{stat.name}</p>
+            </div>
+            <div className="w-full bg-white/10 rounded-full h-1">
+              <div className="bg-gradient-to-r from-blue-400 to-purple-500 h-1 rounded-full transition-all group-hover:from-blue-500 group-hover:to-purple-600" style={{ width: '75%' }}></div>
             </div>
           </div>
         ))}

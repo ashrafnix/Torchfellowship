@@ -1,4 +1,5 @@
-import { getDb, getIo } from '../server.js';
+import { getDb } from '../db/index.js';
+import { getIo } from '../server.js';
 import { ObjectId } from 'mongodb';
 import AppError from '../utils/AppError.js';
 

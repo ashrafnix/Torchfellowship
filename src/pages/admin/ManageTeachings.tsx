@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Teaching } from '../../types.ts';
-import Button from '../../components/ui/Button.tsx';
-import Modal from '../../components/ui/Modal.tsx';
-import { ICONS } from '../../constants.tsx';
-import Spinner from '../../components/ui/Spinner.tsx';
-import Input from '../../components/ui/Input.tsx';
+import { Teaching } from '../../types';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
+import { ICONS } from '../../constants';
+import Spinner from '../../components/ui/Spinner';
+import Input from '../../components/ui/Input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
+import { useApi } from '../../hooks/useApi';
 import { toast } from 'react-toastify';
 
 const ManageTeachings: React.FC = () => {
@@ -104,7 +104,14 @@ const ManageTeachings: React.FC = () => {
                             </div>
                             <div className="flex items-center space-x-3">
                                 <Button size="sm" variant="secondary" onClick={() => handleOpenModal(teaching)}>Edit</Button>
-                                <button onClick={() => handleDelete(teaching._id!)} className="text-red-500 hover:text-red-400 p-2 rounded-md hover:bg-red-500/10 transition-colors"><ICONS.Trash2 className="w-5 h-5"/></button>
+                                <button 
+                                    onClick={() => handleDelete(teaching._id!)} 
+                                    className="text-red-500 hover:text-red-400 p-2 rounded-md hover:bg-red-500/10 transition-colors"
+                                    title="Delete teaching"
+                                    aria-label="Delete teaching"
+                                >
+                                    <ICONS.Trash2 className="w-5 h-5"/>
+                                </button>
                             </div>
                         </div>
                     )) : (

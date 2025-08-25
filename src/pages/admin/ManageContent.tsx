@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { SiteContent } from '../../types.ts';
-import Spinner from '../../components/ui/Spinner.tsx';
-import Button from '../../components/ui/Button.tsx';
-import Input from '../../components/ui/Input.tsx';
+import { SiteContent } from '../../types';
+import Spinner from '../../components/ui/Spinner';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
+import { useApi } from '../../hooks/useApi';
 import { toast } from 'react-toastify';
 
 type PageKey = 'home' | 'give' | 'contact';
@@ -87,6 +87,8 @@ const ManageContent: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-brand-text-dark mb-1">{field.label}</label>
                                     <textarea
+                                        title={field.label}
+                                        placeholder={`Enter ${field.label.toLowerCase()}`}
                                         rows={4}
                                         value={contentElements[field.id] || ''}
                                         onChange={(e) => handleInputChange(field.id, e.target.value)}

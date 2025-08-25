@@ -7,8 +7,12 @@ class SocketService {
   connect(token: string) {
     if (this.socket?.connected) return this.socket;
     
-    const serverUrl = getApiUrl('').replace('/api', '');
-    this.socket = io(serverUrl, {
+    // Use environment variable for socket URL if available, fallback to API base URL
+    const socketUrl = (import.meta.env as any).VITE_SOCKET_URL || getApiUrl('').replace('/api', '');
+    
+    console.log(`Connecting to socket server at: ${socketUrl}`);
+    
+    this.socket = io(socketUrl, {
       auth: { token },
       transports: ['websocket', 'polling']
     });

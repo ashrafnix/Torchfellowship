@@ -3,7 +3,7 @@ import { MongoClient } from 'mongodb';
 import bcrypt from 'bcryptjs';
 import { UserRole } from '../utils/constants.js';
 
-const MONGODB_URI = process.env.MONGODB_URI;
+// Define DB_NAME with fallback but don't access MONGODB_URI yet
 const DB_NAME = process.env.DB_NAME || 'torch-fellowship';
 
 let db;
@@ -50,13 +50,31 @@ export const connectToDatabase = async () => {
     try {
         console.log(`🔌 Attempting to connect to MongoDB`);
         console.log(`📊 Database name: ${DB_NAME}`);
-        console.log(`🔗 Connection string length: ${MONGODB_URI ? MONGODB_URI.length : 'undefined'}`);
+        
+        // Get MongoDB URI at function execution time, not module load time
+        const MONGODB_URI = process.env.MONGODB_URI;
+        
+        console.log('MONGODB_URI in connectToDatabase:', MONGODB_URI ? 'defined' : 'undefined');
+        console.log('Environment has been loaded:', process.env.NODE_ENV || 'not set');
         
         if (!MONGODB_URI) {
+            console.error('\u26A0\uFE0F Environment variables check in connectToDatabase:');
+            console.error('- process.env keys:', Object.keys(process.env).filter(k => 
+                !k.startsWith('npm_') && 
+                !k.startsWith('_')
+            ).join(', '));
             throw new Error('MONGODB_URI is undefined - environment variables not loaded properly');
         }
         
-        const client = new MongoClient(MONGODB_URI);
+        // Show connection string length for debugging
+        console.log(`🔗 Connection string length: ${MONGODB_URI.length} characters`);
+        console.log(`🔗 MONGODB_URI value type: ${typeof MONGODB_URI}`);
+        
+        // Clean potential quote marks from the connection string
+        const cleanUri = MONGODB_URI.replace(/^"|"$|^'|'$/g, '').trim();
+        console.log(`🔗 Clean URI length: ${cleanUri.length} characters`);
+        
+        const client = new MongoClient(cleanUri);
         await client.connect();
         db = client.db(DB_NAME);
         console.log('✅ Successfully connected to MongoDB.');

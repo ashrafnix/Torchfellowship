@@ -53,6 +53,8 @@ export interface PrayerRequest {
   request_text: string;
   is_private: boolean;
   is_answered: boolean;
+  user_id?: string; // ID of the user who submitted the request
+  avatar_url?: string | null; // User's avatar URL
 }
 
 export interface SiteContent {
@@ -156,6 +158,15 @@ export interface BlogPost {
   publishedAt?: string;
 }
 
+export interface MediaAsset {
+  url: string;
+  publicId: string;
+  alt?: string;
+  caption?: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
 export interface LightCampus {
   _id?: string;
   name: string;
@@ -164,6 +175,7 @@ export interface LightCampus {
   contactInfo: string;
   meetingSchedule: string;
   imageUrl?: string;
+  images?: MediaAsset[]; // Array of campus images
   isActive: boolean;
   createdAt: string;
 }

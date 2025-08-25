@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { Link } = ReactRouterDOM as any;
-import { PrayerRequest } from '../../types.ts';
-import Spinner from '../../components/ui/Spinner.tsx';
-import { ICONS } from '../../constants.tsx';
-import Button from '../../components/ui/Button.tsx';
+import { PrayerRequest } from '../../types';
+import Spinner from '../../components/ui/Spinner';
+import { ICONS } from '../../constants';
+import Button from '../../components/ui/Button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
+import { useApi } from '../../hooks/useApi';
 import { toast } from 'react-toastify';
 
 const ManagePrayers: React.FC = () => {
@@ -23,9 +23,14 @@ const ManagePrayers: React.FC = () => {
     const updateMutation = useMutation({
         mutationFn: ({ id, updates }: { id: string; updates: Partial<PrayerRequest> }) =>
             apiClient(`/api/prayer-requests/admin/${id}`, 'PUT', updates),
-        onSuccess: () => {
+        onSuccess: (data, variables) => {
             toast.success("Request updated.");
             queryClient.invalidateQueries({ queryKey: ['prayerRequests', 'admin'] });
+            
+            // If privacy setting was changed, also invalidate public prayer wall cache
+            if (variables.updates.is_private !== undefined) {
+                queryClient.invalidateQueries({ queryKey: ['prayerRequests', 'public'] });
+            }
         },
         onError: (error: Error) => {
             toast.error(`Update failed: ${error.message}`);
@@ -46,6 +51,37 @@ const ManagePrayers: React.FC = () => {
     const handleDelete = async (id: string) => {
         if(window.confirm('Are you sure you want to delete this prayer request?')) {
             deleteMutation.mutate(id);
+        }
+    }
+
+    const handlePrivacyChange = async (req: PrayerRequest) => {
+        const action = req.is_private ? 'make public' : 'make private';
+        const message = req.is_private 
+            ? 'This will make the prayer request visible on the public prayer wall. Continue?' 
+            : 'This will remove the prayer request from the public prayer wall. Continue?';
+        
+        if(window.confirm(`Are you sure you want to ${action}? ${message}`)) {
+            // Store the action for success message
+            const successMessage = req.is_private 
+                ? 'Prayer request is now public and visible on the prayer wall.' 
+                : 'Prayer request is now private and removed from the prayer wall.';
+            
+            updateMutation.mutate(
+                { id: req._id!, updates: { is_private: !req.is_private }}, 
+                {
+                    onSuccess: () => {
+                        toast.success(successMessage);
+                    }
+                }
+            );
+        }
+    }
+
+    const handleAnsweredChange = async (req: PrayerRequest) => {
+        const action = req.is_answered ? 'mark as unanswered' : 'mark as answered';
+        
+        if(window.confirm(`Are you sure you want to ${action}?`)) {
+            updateMutation.mutate({ id: req._id!, updates: { is_answered: !req.is_answered }});
         }
     }
 
@@ -137,13 +173,41 @@ const ManagePrayers: React.FC = () => {
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                                            {/* User Avatar or Initial */}
+                                            {req.avatar_url ? (
+                                                <img 
+                                                    src={req.avatar_url} 
+                                                    alt={`${req.name}'s avatar`}
+                                                    className="w-10 h-10 rounded-full object-cover border-2 border-purple-500/30"
+                                                    onError={(e) => {
+                                                        // Fallback to initials if image fails to load
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.style.display = 'none';
+                                                        const fallback = target.nextElementSibling as HTMLElement;
+                                                        if (fallback) fallback.style.display = 'flex';
+                                                    }}
+                                                />
+                                            ) : null}
+                                            {/* Fallback initials (always rendered, hidden if avatar exists) */}
+                                            <div 
+                                                className={`w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center ${
+                                                    req.avatar_url ? 'hidden' : 'flex'
+                                                }`}
+                                            >
                                                 <span className="text-white font-semibold text-sm">
                                                     {req.name.charAt(0).toUpperCase()}
                                                 </span>
                                             </div>
                                             <div>
-                                                <h3 className="font-semibold text-white">{req.name}</h3>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-semibold text-white">{req.name}</h3>
+                                                    {req.user_id && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-green-500/20 text-green-400 rounded-full border border-green-500/30">
+                                                            <ICONS.Users className="h-2.5 w-2.5 mr-1" />
+                                                            Member
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="text-sm text-gray-400">{req.email || 'No email provided'}</p>
                                             </div>
                                         </div>
@@ -175,7 +239,8 @@ const ManagePrayers: React.FC = () => {
                                     <Button 
                                         size="sm" 
                                         className={`${req.is_answered ? 'bg-orange-500/20 hover:bg-orange-500/30 text-orange-400' : 'bg-green-500/20 hover:bg-green-500/30 text-green-400'}`}
-                                        onClick={() => updateMutation.mutate({ id: req._id!, updates: { is_answered: !req.is_answered }})}
+                                        onClick={() => handleAnsweredChange(req)}
+                                        disabled={updateMutation.isPending}
                                     >
                                         <ICONS.CheckCircle className="h-4 w-4 mr-1" />
                                         {req.is_answered ? 'Mark Unanswered' : 'Mark Answered'}
@@ -183,15 +248,26 @@ const ManagePrayers: React.FC = () => {
                                     <Button 
                                         size="sm" 
                                         className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400"
-                                        onClick={() => updateMutation.mutate({ id: req._id!, updates: { is_private: !req.is_private }})}
+                                        onClick={() => handlePrivacyChange(req)}
+                                        disabled={updateMutation.isPending}
                                     >
-                                        <ICONS.Users className="h-4 w-4 mr-1" />
-                                        {req.is_private ? 'Make Public' : 'Make Private'}
+                                        {req.is_private ? (
+                                            <>
+                                                <ICONS.Users className="h-4 w-4 mr-1" />
+                                                Make Public
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ICONS.Shield className="h-4 w-4 mr-1" />
+                                                Make Private
+                                            </>
+                                        )}
                                     </Button>
                                     <Button 
                                         size="sm" 
                                         className="bg-red-500/20 hover:bg-red-500/30 text-red-400"
                                         onClick={() => handleDelete(req._id!)}
+                                        disabled={deleteMutation.isPending}
                                     >
                                         <ICONS.Trash2 className="h-4 w-4 mr-1" />
                                         Delete

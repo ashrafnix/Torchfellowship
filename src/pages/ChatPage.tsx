@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../hooks/useAuth.ts';
-import { ICONS } from '../constants.tsx';
-import Spinner from '../components/ui/Spinner.tsx';
-import { ChatMessage, User } from '../types.ts';
-import Button from '../components/ui/Button.tsx';
+import { useAuth } from '../hooks/useAuth';
+import { ICONS } from '../constants';
+import Spinner from '../components/ui/Spinner';
+import { ChatMessage, User } from '../types';
+import Button from '../components/ui/Button';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 import { toast } from 'react-toastify';
 import { socketService } from '../services/socketService';
 import { uploadImage } from '../services/uploadService';
@@ -228,7 +228,7 @@ const ChatPage: React.FC = () => {
     
     const markAsRead = async (messageId: string) => {
         try {
-            await apiClient(`/api/messages/${messageId}/read`, 'PATCH');
+            await apiClient(`/api/messages/${messageId}/read`, 'PUT');
         } catch (error) {
             console.error('Failed to mark message as read:', error);
         }
@@ -301,7 +301,7 @@ const ChatPage: React.FC = () => {
     const addReaction = async (messageId: string, emoji: string) => {
         try {
             await apiClient(`/api/messages/${messageId}/react`, 'POST', { emoji });
-            queryClient.invalidateQueries(['messages', activeChat.id]);
+            queryClient.invalidateQueries({ queryKey: ['messages', activeChat.id] });
         } catch (error) {
             toast.error('Failed to add reaction');
         }
@@ -333,7 +333,7 @@ const ChatPage: React.FC = () => {
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 } md:translate-x-0 fixed md:relative z-50 md:z-auto w-80 md:w-1/4 h-full bg-brand-dark/50 border-r border-brand-muted/50 p-4 flex flex-col transition-transform duration-300 ease-in-out`}>
                     <h2 className="text-xl font-bold font-serif text-white mb-4">Chats</h2>
-                    <div className="flex-grow overflow-y-auto pr-2">
+                    <div className="flex-grow overflow-y-auto pr-2 admin-scroll">
                         {/* Community Chat */}
                         <div 
                             onClick={() => {
@@ -407,7 +407,7 @@ const ChatPage: React.FC = () => {
                         >
                             <ICONS.Menu className="h-6 w-6" />
                         </Button>
-                        { activeChat.type === 'private' && activeChat.avatar && <img src={activeChat.avatar} className="h-10 w-10 rounded-full object-cover" /> }
+                        { activeChat.type === 'private' && activeChat.avatar && <img src={activeChat.avatar} alt={`${activeChat.name} avatar`} className="h-10 w-10 rounded-full object-cover" /> }
                         { activeChat.type === 'admin' && <div className="p-2 bg-red-600 rounded-full"><ICONS.Shield className="h-6 w-6 text-white"/></div> }
                         { activeChat.type === 'community' && <div className="p-2 bg-brand-muted rounded-full"><ICONS.Users className="h-6 w-6"/></div> }
                         <div>
@@ -420,7 +420,7 @@ const ChatPage: React.FC = () => {
                     </div>
 
                     {/* Messages */}
-                    <div className="flex-1 p-6 overflow-y-auto bg-gradient-radial from-white/[0.03] via-transparent to-transparent" ref={messagesContainerRef} onScroll={handleScroll}>
+                    <div className="flex-1 p-6 overflow-y-auto bg-gradient-radial from-white/[0.03] via-transparent to-transparent admin-scroll" ref={messagesContainerRef} onScroll={handleScroll}>
                         {isLoadingMessages ? <div className="flex justify-center"><Spinner /></div> : (
                             <div className="space-y-1">
                                 {messages.length === 0 ? (
@@ -547,16 +547,16 @@ const ChatPage: React.FC = () => {
                             <div ref={emojiPickerRef} className="absolute bottom-20 left-4 z-50">
                                 <EmojiPicker
                                     onEmojiClick={onEmojiClick}
-                                    theme="dark"
+                                    theme={'dark' as any}
                                     width={350}
                                     height={450}
-                                    emojiStyle="apple"
+                                    emojiStyle={'apple' as any}
                                     previewConfig={{
                                         showPreview: false
                                     }}
                                     skinTonesDisabled
                                     searchDisabled={false}
-                                    suggestedEmojisMode="recent"
+                                    suggestedEmojisMode={'recent' as any}
                                 />
                             </div>
                         )}
@@ -568,7 +568,7 @@ const ChatPage: React.FC = () => {
                                     <p className="text-xs text-brand-text-dark">Replying to {replyingTo.authorName}</p>
                                     <p className="text-sm text-white">{replyingTo.isImage ? 'Image' : replyingTo.content.slice(0, 50)}...</p>
                                 </div>
-                                <button onClick={() => setReplyingTo(null)} className="text-brand-text-dark hover:text-white">
+                                <button onClick={() => setReplyingTo(null)} className="text-brand-text-dark hover:text-white" aria-label="Cancel reply">
                                     <ICONS.X className="h-4 w-4" />
                                 </button>
                             </div>
@@ -591,7 +591,9 @@ const ChatPage: React.FC = () => {
                                 accept="image/*"
                                 onChange={handleImageUpload}
                                 className="hidden"
+                                aria-label="Upload image file"
                             />
+
                              <Button 
                                 variant="ghost" 
                                 size="sm" 
@@ -644,23 +646,6 @@ const ChatPage: React.FC = () => {
             </div>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-                
-                /* Premium Scrollbar Styling */
-                ::-webkit-scrollbar {
-                    width: 8px;
-                }
-                ::-webkit-scrollbar-track {
-                    background: linear-gradient(145deg, #1a1d23, #0f1115);
-                    border-radius: 10px;
-                }
-                ::-webkit-scrollbar-thumb {
-                    background: linear-gradient(145deg, #303238, #222428);
-                    border-radius: 10px;
-                    border: 1px solid rgba(255, 255, 255, 0.05);
-                }
-                ::-webkit-scrollbar-thumb:hover {
-                    background: linear-gradient(145deg, #005BEA, #003DAA);
-                }
                 
                 .typing-indicator {
                     display: flex;

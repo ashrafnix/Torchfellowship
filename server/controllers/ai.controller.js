@@ -4,12 +4,20 @@ import AppError from '../utils/AppError.js';
 let genAI = null;
 
 const getGenAI = () => {
-    if (!genAI && process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    
+    if (!apiKey) {
+        console.error('❌ GEMINI_API_KEY not found in environment variables');
+        return null;
+    }
+    
+    if (!genAI) {
         try {
-            genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            genAI = new GoogleGenerativeAI(apiKey);
             console.log('✅ GoogleGenAI initialized successfully');
         } catch (error) {
             console.error('❌ Failed to initialize GoogleGenAI:', error.message);
+            return null;
         }
     }
     return genAI;
@@ -29,7 +37,7 @@ export const streamChat = async (req, res, next) => {
         }
 
         const model = aiClient.getGenerativeModel({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             systemInstruction: "You are a sophisticated AI assistant for the Torch Fellowship community, a vibrant Christian group in Mutundwe, Uganda. Your purpose is to help users with their spiritual questions, provide information about the fellowship's events and teachings, and offer encouragement. Be warm, empathetic, and align your responses with Christian values. Do not answer questions outside of this scope.",
         });
 

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { User, UserRole } from '../../types.ts';
-import { useAuth } from '../../hooks/useAuth.ts';
-import Spinner from '../../components/ui/Spinner.tsx';
+import { User, UserRole } from '../../types';
+import { useAuth } from '../../hooks/useAuth';
+import Spinner from '../../components/ui/Spinner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
+import { useApi } from '../../hooks/useApi';
 import { toast } from 'react-toastify';
 import { ICONS } from '../../constants';
 import Button from '../../components/ui/Button';
@@ -107,7 +107,7 @@ const ManageUsers: React.FC = () => {
                 {isLoading ? (
                     <div className="flex justify-center items-center h-64"><Spinner /></div>
                 ) : (
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto admin-scroll">
                         <table className="min-w-full">
                             <thead>
                                 <tr className="border-b border-white/10">
@@ -151,6 +151,7 @@ const ManageUsers: React.FC = () => {
                                         <td className="py-4 px-2 text-right">
                                             <div className="relative inline-block">
                                                 <select 
+                                                    title={`Change role for ${user.fullName || user.email}`}
                                                     value={user.role} 
                                                     onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                                                     className="appearance-none bg-white/5 hover:bg-white/10 text-white rounded-lg px-4 py-2 pr-8 border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all cursor-pointer"

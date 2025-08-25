@@ -1,6 +1,6 @@
 
 import jwt from 'jsonwebtoken';
-import { getDb } from '../server.js';
+import { getDb } from '../db/index.js';
 import AppError from '../utils/AppError.js';
 import { ObjectId } from 'mongodb';
 import { UserRole } from '../utils/constants.js';
@@ -46,4 +46,46 @@ export const adminOnly = (req, res, next) => {
         return next(new AppError('You do not have permission to perform this action.', 403));
     }
     next();
+};
+
+// Optional authentication middleware - doesn't block if no token is provided
+export const optionalAuthMiddleware = async (req, res, next) => {
+    try {
+        let token;
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+
+        if (!token) {
+            // No token provided - continue without authentication
+            req.user = null;
+            return next();
+        }
+
+        const payload = jwt.verify(token, process.env.JWT_SECRET || 'a-very-secret-key');
+
+        if (typeof payload === 'string' || !payload.id) {
+            // Invalid token - continue without authentication
+            req.user = null;
+            return next();
+        }
+
+        const db = getDb();
+        const currentUser = await db.collection('users').findOne({ _id: new ObjectId(payload.id) });
+
+        if (!currentUser) {
+            // User not found - continue without authentication
+            req.user = null;
+            return next();
+        }
+        
+        // Attach user to request if authenticated
+        req.user = currentUser;
+        next();
+
+    } catch(err) {
+        // Any authentication error - continue without authentication
+        req.user = null;
+        next();
+    }
 };

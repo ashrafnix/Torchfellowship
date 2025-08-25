@@ -91,6 +91,8 @@ export interface PrayerRequest {
   request_text: string;
   is_private: boolean;
   is_answered: boolean;
+  user_id?: string; // ID of the user who submitted the request
+  avatar_url?: string | null; // User's avatar URL
 }
 
 export interface DBPrayerRequest {
@@ -101,6 +103,8 @@ export interface DBPrayerRequest {
   request_text: string;
   is_private: boolean;
   is_answered: boolean;
+  user_id?: string; // ID of the user who submitted the request
+  avatar_url?: string | null; // User's avatar URL
 }
 
 export interface SiteContent {

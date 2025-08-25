@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { getDb } from '../server.js';
+import { getDb } from '../db/index.js';
 import AppError from '../utils/AppError.js';
 import { UserRole } from '../utils/constants.js';
 import { formatUserForClient } from '../utils/userFormatter.js';

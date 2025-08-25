@@ -1,4 +1,4 @@
-import { getDb } from '../server.js';
+import { getDb } from '../db/index.js';
 import { ObjectId } from 'mongodb';
 import AppError from '../utils/AppError.js';
 
@@ -60,7 +60,7 @@ export const getAllCampusesAdmin = async (req, res, next) => {
 export const createCampusAdmin = async (req, res, next) => {
     try {
         const db = getDb();
-        const { name, location, leaderName, contactInfo, meetingSchedule, isActive, imageUrl } = req.body;
+        const { name, location, leaderName, contactInfo, meetingSchedule, isActive, imageUrl, images } = req.body;
 
         if (!name || !location || !leaderName) {
             return next(new AppError('Name, location, and leader name are required.', 400));
@@ -74,6 +74,7 @@ export const createCampusAdmin = async (req, res, next) => {
             meetingSchedule,
             isActive: isActive !== false,
             imageUrl,
+            images: images || [], // Array of image objects with url, publicId, etc.
             createdAt: new Date().toISOString(),
         };
 
@@ -89,7 +90,7 @@ export const createCampusAdmin = async (req, res, next) => {
 export const updateCampusAdmin = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name, location, description, isActive, imageUrl } = req.body;
+        const { name, location, description, isActive, imageUrl, images } = req.body;
 
         if (!ObjectId.isValid(id)) {
             return next(new AppError('Invalid campus ID.', 400));
@@ -97,6 +98,11 @@ export const updateCampusAdmin = async (req, res, next) => {
 
         const db = getDb();
         const updatedFields = { name, location, description, isActive, imageUrl };
+        
+        // Only update images if provided
+        if (images !== undefined) {
+            updatedFields.images = images;
+        }
 
         const result = await db.collection('light_campuses').updateOne(
             { _id: new ObjectId(id) },
@@ -204,5 +210,71 @@ export const rejectApplicationAdmin = async (req, res, next) => {
         res.status(200).json({ message: 'Application rejected.' });
     } catch (error) {
         next(new AppError('Failed to reject application.', 500));
+    }
+};
+
+// Add images to a campus
+export const addCampusImages = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { images } = req.body; // Array of {url, publicId, alt, caption}
+
+        if (!ObjectId.isValid(id)) {
+            return next(new AppError('Invalid campus ID.', 400));
+        }
+
+        if (!images || !Array.isArray(images)) {
+            return next(new AppError('Images array is required.', 400));
+        }
+
+        const db = getDb();
+        
+        // Add timestamps to images
+        const timestampedImages = images.map(img => ({
+            ...img,
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: req.user?._id?.toHexString() || 'system'
+        }));
+
+        const result = await db.collection('light_campuses').updateOne(
+            { _id: new ObjectId(id) },
+            { $push: { images: { $each: timestampedImages } } }
+        );
+
+        if (result.matchedCount === 0) {
+            return next(new AppError('Light campus not found.', 404));
+        }
+
+        const updatedCampus = await db.collection('light_campuses').findOne({ _id: new ObjectId(id) });
+        res.status(200).json(formatCampusForClient(updatedCampus));
+    } catch (error) {
+        next(new AppError('Failed to add images to campus.', 500));
+    }
+};
+
+// Remove an image from a campus
+export const removeCampusImage = async (req, res, next) => {
+    try {
+        const { id, imageId } = req.params;
+
+        if (!ObjectId.isValid(id)) {
+            return next(new AppError('Invalid campus ID.', 400));
+        }
+
+        const db = getDb();
+        
+        const result = await db.collection('light_campuses').updateOne(
+            { _id: new ObjectId(id) },
+            { $pull: { images: { publicId: imageId } } }
+        );
+
+        if (result.matchedCount === 0) {
+            return next(new AppError('Light campus not found.', 404));
+        }
+
+        const updatedCampus = await db.collection('light_campuses').findOne({ _id: new ObjectId(id) });
+        res.status(200).json(formatCampusForClient(updatedCampus));
+    } catch (error) {
+        next(new AppError('Failed to remove image from campus.', 500));
     }
 };

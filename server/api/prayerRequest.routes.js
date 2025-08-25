@@ -7,7 +7,7 @@ import {
     updatePrayerRequest, 
     deletePrayerRequest 
 } from '../controllers/prayerRequest.controller.js';
-import { authMiddleware, adminOnly } from '../middleware/auth.middleware.js';
+import { authMiddleware, adminOnly, optionalAuthMiddleware } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ const router = express.Router();
 router.get('/public', getPublicPrayerRequests);
 
 // POST /api/prayer-requests - Create a new prayer request from the public form
-router.post('/', createPublicPrayerRequest);
+router.post('/', optionalAuthMiddleware, createPublicPrayerRequest);
 
 
 // --- ADMIN-ONLY ROUTES ---

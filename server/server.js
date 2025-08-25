@@ -8,16 +8,49 @@
 import path from 'path';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+// Load environment variables - ensure this is done before any other imports
+const envPath = path.resolve(__dirname, '.env');
+const envExists = fs.existsSync(envPath);
+
+if (!envExists) {
+  console.error(`\u26A0\uFE0F ERROR: .env file not found at ${envPath}`);
+  console.error('Please create a .env file with required environment variables');
+  process.exit(1); // Exit if no .env file
+}
+
+try {
+  const result = dotenv.config({ path: envPath, override: true });
+  
+  if (result.error) {
+    console.error('\u26A0\uFE0F Error loading .env file:', result.error);
+  } else {
+    console.log('\u2705 Environment variables loaded from .env file');
+  }
+} catch (error) {
+  console.error('\u26A0\uFE0F Failed to load environment variables:', error);
+  process.exit(1); // Exit if env loading fails
+}
 
 // Debug: Check if environment variables are loaded
 console.log('Environment variables loaded:');
 console.log('- GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'Set' : 'Not set');
 console.log('- MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not set');
+
+// Direct console output of MongoDB URI to diagnose loading issues
+if (process.env.MONGODB_URI) {
+  const uri = process.env.MONGODB_URI;
+  const masked = uri.substring(0, 20) + '****' + uri.substring(uri.length - 10);
+  console.log('- MONGODB_URI value:', masked);
+  console.log('- MONGODB_URI length:', uri.length);
+  console.log('- MONGODB_URI type:', typeof uri);
+} else {
+  console.log('\u26a0\ufe0f MONGODB_URI is not defined! Check your .env file');
+}
 
 // -----------------------------------------------------------------------------
 // Module Imports (Now that .env is loaded)
@@ -30,7 +63,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 
-import { MongoClient, ObjectId } from 'mongodb';
+import { connectToDatabase, getDb } from './db/index.js';
+import { ObjectId } from 'mongodb';
 import AppError from './utils/AppError.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -54,36 +88,6 @@ import volunteerRoutes from './api/volunteer.routes.js';
 import blogRoutes from './api/blog.routes.js';
 import lightCampusRoutes from './api/lightCampus.routes.js';
 import torchKidsRoutes from './api/torchKids.routes.js';
-
-// Direct MongoDB connection string
-const MONGODB_URI = process.env.MONGODB_URI;
-const DB_NAME = 'torch-fellowship';
-
-let db;
-
-async function connectToDatabase() {
-    if (db) return db;
-    try {
-        console.log('🔌 Connecting to MongoDB Atlas...');
-        console.log(`Using MongoDB URI: ${MONGODB_URI ? 'Loaded from .env' : 'Not found in .env'}`);
-        if (!MONGODB_URI) {
-            throw new Error('MONGODB_URI not found in .env file');
-        }
-        const client = new MongoClient(MONGODB_URI);
-        await client.connect();
-        db = client.db(DB_NAME);
-        console.log('✅ Connected to MongoDB Atlas');
-        return db;
-    } catch (error) {
-        console.error('❌ MongoDB connection failed:', error.message);
-        throw error;
-    }
-}
-
-export const getDb = () => {
-    if (!db) throw new Error('Database not initialized');
-    return db;
-};
 
 
 

@@ -1,8 +1,7 @@
-
 module.exports = {
   apps: [{
     name: "torch-fellowship-backend",
-    script: "./server/dist/server.js",
+    script: "./server/server.js",
     watch: false,
     instances: "max",
     exec_mode: "cluster",
@@ -29,7 +28,7 @@ module.exports = {
        // CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
        // Required for Gemini AI:
-       // API_KEY=your_google_gemini_api_key
+       // GEMINI_API_KEY=your_google_gemini_api_key
     }
   }]
 };

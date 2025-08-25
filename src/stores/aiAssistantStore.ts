@@ -19,6 +19,7 @@ interface AIAssistantState {
 interface AIAssistantActions {
   toggleOpen: () => void;
   setInput: (input: string) => void;
+  insertEmoji: (emoji: string) => void;
   handleSend: () => Promise<void>;
 }
 
@@ -38,6 +39,7 @@ export const useAIAssistantStore = create<AIAssistantState & AIAssistantActions>
   input: '',
   toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),
   setInput: (input: string) => set({ input }),
+  insertEmoji: (emoji: string) => set((state) => ({ input: state.input + emoji })),
   handleSend: async () => {
     const { input, isLoading, messages } = get();
     if (input.trim() === '' || isLoading) return;

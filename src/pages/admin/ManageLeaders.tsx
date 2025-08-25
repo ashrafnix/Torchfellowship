@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Leader } from '../../types.ts';
-import Button from '../../components/ui/Button.tsx';
-import Modal from '../../components/ui/Modal.tsx';
-import { ICONS } from '../../constants.tsx';
-import Spinner from '../../components/ui/Spinner.tsx';
-import Input from '../../components/ui/Input.tsx';
+import { Leader } from '../../types';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
+import { ICONS } from '../../constants';
+import Spinner from '../../components/ui/Spinner';
+import Input from '../../components/ui/Input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApi } from '../../hooks/useApi.ts';
-import { uploadImage } from '../../services/uploadService.ts';
+import { useApi } from '../../hooks/useApi';
+import { uploadImage } from '../../services/uploadService';
 import { toast } from 'react-toastify';
 
 const ManageLeaders: React.FC = () => {
@@ -118,7 +118,14 @@ const ManageLeaders: React.FC = () => {
                             </div>
                             <div className="flex items-center space-x-3">
                                 <Button size="sm" variant="secondary" onClick={() => handleOpenModal(leader)}>Edit</Button>
-                                <button onClick={() => handleDelete(leader._id!)} className="text-red-500 hover:text-red-400 p-2 rounded-md hover:bg-red-500/10 transition-colors"><ICONS.Trash2 className="w-5 h-5"/></button>
+                                <Button 
+                                    size="sm" 
+                                    variant="danger" 
+                                    onClick={() => handleDelete(leader._id!)}
+                                    className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                                >
+                                    <ICONS.Trash2 className="w-4 h-4" />
+                                </Button>
                             </div>
                         </div>
                     )) : (
@@ -137,7 +144,14 @@ const ManageLeaders: React.FC = () => {
                            <img src={photoPreview || 'https://via.placeholder.com/100x100.png/2B2F36/EAEAEA?text=Photo'} alt="Preview" className="w-24 h-24 rounded-full object-cover"/>
                            <label htmlFor="photo-upload" className="absolute -bottom-1 -right-1 bg-brand-gold text-brand-dark p-1.5 rounded-full cursor-pointer hover:bg-brand-gold-dark transition-colors">
                                 <ICONS.Edit className="w-4 h-4" />
-                                <input id="photo-upload" type="file" className="sr-only" accept="image/png, image/jpeg" onChange={handlePhotoChange} />
+                                <input 
+                                    id="photo-upload" 
+                                    type="file" 
+                                    className="sr-only" 
+                                    accept="image/png, image/jpeg" 
+                                    onChange={handlePhotoChange}
+                                    aria-label="Upload leader photo"
+                                />
                             </label>
                         </div>
                         <div className="flex-grow space-y-4">

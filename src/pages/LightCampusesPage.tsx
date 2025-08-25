@@ -14,6 +14,8 @@ import { toast } from 'react-toastify';
 
 const LightCampusesPage: React.FC = () => {
     const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [imageModalOpen, setImageModalOpen] = useState(false);
     
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -50,6 +52,16 @@ const LightCampusesPage: React.FC = () => {
         mutation.mutate(data);
     };
 
+    const openImageModal = (imageUrl: string) => {
+        setSelectedImage(imageUrl);
+        setImageModalOpen(true);
+    };
+
+    const closeImageModal = () => {
+        setSelectedImage(null);
+        setImageModalOpen(false);
+    };
+
     return (
         <div className="animate-fadeInUp">
             {/* Hero Section */}
@@ -78,7 +90,55 @@ const LightCampusesPage: React.FC = () => {
                     ) : campuses.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {campuses.map(campus => (
-                                <div key={campus._id} className="bg-brand-surface p-6 rounded-lg border border-brand-muted/50">
+                                <div key={campus._id} className="bg-brand-surface p-6 rounded-lg border border-brand-muted/50 overflow-hidden">
+                                    {/* Campus Images Gallery */}
+                                    {campus.images && campus.images.length > 0 ? (
+                                        <div className="mb-4">
+                                            <div className="relative mb-3">
+                                                <img 
+                                                    src={campus.images[0].url} 
+                                                    alt={campus.images[0].alt || campus.name}
+                                                    className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                                    onClick={() => openImageModal(campus.images[0].url)}
+                                                />
+                                                {campus.images.length > 1 && (
+                                                    <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded-lg text-sm">
+                                                        +{campus.images.length - 1} more
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {campus.images.length > 1 && (
+                                                <div className="flex gap-2 overflow-x-auto pb-2 prayer-wall-scroll">
+                                                    {campus.images.slice(1, 4).map((image, index) => (
+                                                        <img 
+                                                            key={index}
+                                                            src={image.url} 
+                                                            alt={image.alt || `${campus.name} ${index + 2}`}
+                                                            className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity flex-shrink-0"
+                                                            onClick={() => openImageModal(image.url)}
+                                                        />
+                                                    ))}
+                                                    {campus.images.length > 4 && (
+                                                        <div 
+                                                            className="w-16 h-16 bg-brand-dark border border-brand-muted rounded cursor-pointer flex items-center justify-center hover:bg-brand-muted/20 transition-colors flex-shrink-0"
+                                                            onClick={() => openImageModal(campus.images[4].url)}
+                                                        >
+                                                            <span className="text-xs text-brand-text-dark">+{campus.images.length - 4}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="mb-4 h-48 bg-brand-dark rounded-lg flex items-center justify-center border border-brand-muted/30">
+                                            <div className="text-center text-brand-text-dark">
+                                                <ICONS.Home className="h-12 w-12 mx-auto mb-2 text-brand-muted" />
+                                                <p className="text-sm">No images available</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Campus Information */}
                                     <h3 className="text-2xl font-serif font-bold text-white">{campus.name}</h3>
                                     <p className="text-brand-gold font-semibold mt-1">Led by {campus.leaderName}</p>
                                     <div className="mt-4 space-y-2 text-brand-text-dark">
@@ -120,6 +180,22 @@ const LightCampusesPage: React.FC = () => {
                         <Button type="submit" isLoading={mutation.isPending}>Submit Proposal</Button>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Image Modal */}
+            <Modal isOpen={imageModalOpen} onClose={closeImageModal} title="Campus Image">
+                {selectedImage && (
+                    <div className="text-center">
+                        <img 
+                            src={selectedImage} 
+                            alt="Campus view"
+                            className="max-w-full max-h-[70vh] object-contain mx-auto rounded-lg"
+                        />
+                        <div className="mt-4 flex justify-center">
+                            <Button onClick={closeImageModal}>Close</Button>
+                        </div>
+                    </div>
+                )}
             </Modal>
         </div>
     );

@@ -190,7 +190,7 @@ const Header: React.FC = () => {
                     <div className="absolute top-5 right-4">
                         <button onClick={closeMobileMenu} className="p-2" aria-label="Close menu"><ICONS.X className="h-8 w-8 text-brand-text-dark" /></button>
                     </div>
-                    <div className="pt-24 pb-8 px-6 h-full overflow-y-auto">
+                    <div className="pt-24 pb-8 px-6 h-full overflow-y-auto admin-scroll">
                         <nav className="flex flex-col space-y-2">
                             <MobileNavLink to="/" closeMenu={closeMobileMenu}>Home</MobileNavLink>
                             <MobileNavLink to="/about" closeMenu={closeMobileMenu}>About Us</MobileNavLink>

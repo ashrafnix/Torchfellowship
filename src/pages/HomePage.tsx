@@ -3,12 +3,13 @@ import * as ReactRouterDOM from 'react-router-dom';
 const { Link } = ReactRouterDOM as any;
 import Button from '../components/ui/Button';
 import { ICONS } from '../constants';
-import { Teaching, Event } from '../types';
+import { Teaching, Event, BlogPost } from '../types';
 import Spinner from '../components/ui/Spinner';
 import useOnScreen from '../hooks/useOnScreen';
 import { useQuery } from '@tanstack/react-query';
 import { useApi } from '../hooks/useApi';
 import { tuesdayFellowship } from '../data/events';
+import UpcomingEventsSection from '../components/UpcomingEventsSection';
 
 const AnimatedSection: React.FC<{children: React.ReactNode, className?: string}> = ({ children, className }) => {
     const ref = useRef<HTMLDivElement>(null);
@@ -32,7 +33,15 @@ const HomePage: React.FC = () => {
     }
   });
 
-  const isLoading = isLoadingTeaching;
+  const { data: latestBlogPost, isLoading: isLoadingBlog } = useQuery<BlogPost | null>({
+    queryKey: ['blog', 'latest'],
+    queryFn: async () => {
+      const posts = await apiClient<BlogPost[]>('/api/blog', 'GET');
+      return posts.length > 0 ? posts[0] : null;
+    }
+  });
+
+  const isLoading = isLoadingTeaching || isLoadingBlog;
 
   return (
     <div className="text-white">
@@ -102,17 +111,46 @@ const HomePage: React.FC = () => {
         </div>
       </section>
       
-      {/* Latest Teaching & Event Section */}
+      {/* Featured Content Section */}
       <section className="py-24 bg-brand-dark">
         <div className="container mx-auto px-4">
+          <AnimatedSection className="text-center mb-16">
+            <h2 className="text-4xl font-serif font-bold">Featured Content</h2>
+            <p className="mt-3 text-brand-text-dark max-w-2xl mx-auto">Stay updated with our latest teachings, blog posts, and upcoming events.</p>
+          </AnimatedSection>
           {isLoading ? <div className="flex justify-center"><Spinner /></div> : (
-            <div className="grid lg:grid-cols-2 gap-12 items-start">
+            <div className="grid lg:grid-cols-3 gap-8 items-start">
               {latestTeaching && <AnimatedSection><LatestTeachingCard teaching={latestTeaching} /></AnimatedSection>}
+              {latestBlogPost && <AnimatedSection><FeaturedBlogCard blogPost={latestBlogPost} /></AnimatedSection>}
               <AnimatedSection><UpcomingEventCard event={tuesdayFellowship} /></AnimatedSection>
             </div>
           )}
         </div>
       </section>
+      
+      {/* Upcoming Events Section */}
+      <section className="py-24 bg-brand-surface">
+        <div className="container mx-auto px-4">
+          <UpcomingEventsSection />
+        </div>
+      </section>
+      
+      {/* CSS for line-clamp */}
+      <style>{`
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .line-clamp-3 {
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
+
     </div>
   );
 };
@@ -121,8 +159,8 @@ const LatestTeachingCard: React.FC<{ teaching: Teaching }> = ({ teaching }) => {
   const videoId = teaching.youtube_url.split('v=')[1]?.split('&')[0] || teaching.youtube_url.split('/').pop();
   return (
     <div>
-      <h2 className="text-4xl font-serif font-bold text-center mb-8">Latest Teaching</h2>
-      <div className="bg-brand-surface rounded-lg shadow-2xl overflow-hidden">
+      <h3 className="text-2xl font-serif font-bold text-center mb-6 text-brand-gold">Latest Teaching</h3>
+      <div className="bg-brand-surface rounded-lg shadow-2xl overflow-hidden h-fit">
         <div className="relative pb-[56.25%] bg-black">
            <iframe 
                 className="absolute top-0 left-0 w-full h-full"
@@ -135,9 +173,53 @@ const LatestTeachingCard: React.FC<{ teaching: Teaching }> = ({ teaching }) => {
         </div>
         <div className="p-6">
             <p className="text-sm text-brand-gold font-semibold">{teaching.category}</p>
-            <h3 className="text-2xl font-bold font-serif mt-2">{teaching.title}</h3>
-            <p className="text-brand-text-dark mt-1">{teaching.speaker} • {new Date(teaching.preached_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            <Link to="/teachings" className="text-brand-gold hover:underline mt-4 inline-block font-semibold">View All Teachings &rarr;</Link>
+            <h4 className="text-xl font-bold font-serif mt-2 line-clamp-2">{teaching.title}</h4>
+            <p className="text-brand-text-dark mt-1 text-sm">{teaching.speaker} • {new Date(teaching.preached_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <Link to="/teachings" className="text-brand-gold hover:underline mt-4 inline-block font-semibold text-sm">View All Teachings &rarr;</Link>
+        </div>
+      </div>
+    </div>
+  )
+};
+
+const FeaturedBlogCard: React.FC<{ blogPost: BlogPost }> = ({ blogPost }) => {
+  const excerpt = blogPost.content.length > 150 
+    ? blogPost.content.substring(0, 150) + '...'
+    : blogPost.content;
+
+  return (
+    <div>
+      <h3 className="text-2xl font-serif font-bold text-center mb-6 text-brand-gold">Latest Blog Post</h3>
+      <div className="bg-brand-surface rounded-lg shadow-2xl overflow-hidden h-fit">
+        <div className="relative overflow-hidden">
+          <img 
+            src={blogPost.featureImageUrl} 
+            alt={blogPost.title}
+            className="w-full h-48 object-cover transition-transform duration-300 hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+        </div>
+        <div className="p-6">
+          <p className="text-sm text-brand-gold font-semibold">Blog Post</p>
+          <h4 className="text-xl font-bold font-serif mt-2 line-clamp-2">{blogPost.title}</h4>
+          <p className="text-brand-text-dark mt-2 text-sm line-clamp-3">{excerpt}</p>
+          <p className="text-brand-text-dark mt-2 text-xs">
+            By {blogPost.authorName} • {new Date(blogPost.publishedAt || blogPost.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+          <div className="flex justify-between items-center mt-4">
+            <Link 
+              to={`/blog/${blogPost.slug}`} 
+              className="text-brand-gold hover:underline font-semibold text-sm"
+            >
+              Read More &rarr;
+            </Link>
+            <Link 
+              to="/blog" 
+              className="text-brand-text-dark hover:text-brand-gold transition-colors text-sm"
+            >
+              View All Posts
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -151,18 +233,19 @@ const UpcomingEventCard: React.FC<{ event: Event }> = ({ event }) => {
 
   return (
     <div>
-      <h2 className="text-4xl font-serif font-bold text-center mb-8">Weekly Fellowship</h2>
-      <div className="bg-brand-surface rounded-lg shadow-2xl overflow-hidden">
-        {event.image_base64 && <img src={event.image_base64} alt={event.title} className="w-full h-64 object-cover" />}
+      <h3 className="text-2xl font-serif font-bold text-center mb-6 text-brand-gold">Weekly Fellowship</h3>
+      <div className="bg-brand-surface rounded-lg shadow-2xl overflow-hidden h-fit">
+        {event.image_base64 && <img src={event.image_base64} alt={event.title} className="w-full h-48 object-cover" />}
         <div className="p-6">
-            <h3 className="text-2xl font-bold font-serif">{event.title}</h3>
-            <p className="text-brand-text-dark mt-2">{event.description}</p>
-            <div className="mt-4 text-sm space-y-2">
+            <p className="text-sm text-brand-gold font-semibold">Upcoming Event</p>
+            <h4 className="text-xl font-bold font-serif mt-2">{event.title}</h4>
+            <p className="text-brand-text-dark mt-2 text-sm line-clamp-3">{event.description}</p>
+            <div className="mt-4 text-xs space-y-1">
               <p><strong className="text-brand-gold">Date:</strong> {dateDisplay}</p>
               <p><strong className="text-brand-gold">Time:</strong> {event.event_time}</p>
               <p><strong className="text-brand-gold">Location:</strong> {event.location}</p>
             </div>
-            <Link to="/events" className="text-brand-gold hover:underline mt-4 inline-block font-semibold">View All Events &rarr;</Link>
+            <Link to="/events" className="text-brand-gold hover:underline mt-4 inline-block font-semibold text-sm">View All Events &rarr;</Link>
         </div>
       </div>
     </div>

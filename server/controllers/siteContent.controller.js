@@ -1,4 +1,4 @@
-import { getDb } from '../server.js';
+import { getDb } from '../db/index.js';
 import AppError from '../utils/AppError.js';
 
 export const getContent = async (req, res, next) => {
