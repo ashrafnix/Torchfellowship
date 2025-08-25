@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { useNavigate } = ReactRouterDOM as any;
-import { MinistryTeam } from '../types.ts';
-import Spinner from '../components/ui/Spinner.tsx';
-import Modal from '../components/ui/Modal.tsx';
-import Button from '../components/ui/Button.tsx';
-import { ICONS } from '../constants.tsx';
-import { useAuth } from '../hooks/useAuth.ts';
+import { MinistryTeam } from '../types';
+import Spinner from '../components/ui/Spinner';
+import Modal from '../components/ui/Modal';
+import Button from '../components/ui/Button';
+import { ICONS } from '../constants';
+import { useAuth } from '../hooks/useAuth';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 import { toast } from 'react-toastify';
 
 const ServePage: React.FC = () => {
@@ -60,13 +60,12 @@ const ServePage: React.FC = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url('https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273143/Serve_swpawm.png')` }}
         >
-            <div className="absolute inset-0 bg-brand-dark/70 backdrop-blur-sm"></div>
         </div>
         <div className="container mx-auto px-4 relative z-10">
-          <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold">
+          <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold drop-shadow-lg">
             Find Your Place to Serve
           </h1>
-          <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-brand-text-dark">
+          <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-white drop-shadow-md">
              God has given each of you a gift from his great variety of spiritual gifts. Use them well to serve one another. (1 Peter 4:10). Discover where you can use your gifts to build His church.
           </p>
         </div>

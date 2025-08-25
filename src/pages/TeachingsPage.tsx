@@ -49,13 +49,12 @@ const TeachingsPage: React.FC = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url('https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273135/Teachings_kkvbhd.png')` }}
         >
-            <div className="absolute inset-0 bg-brand-dark/70 backdrop-blur-sm"></div>
         </div>
         <div className="container mx-auto px-4 relative z-10">
-          <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold">
+          <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold drop-shadow-lg">
             Our Teachings
           </h1>
-          <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-brand-text-dark">
+          <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-white drop-shadow-md">
             Immerse yourself in transformative messages that inspire, challenge, and build up your faith.
           </p>
         </div>

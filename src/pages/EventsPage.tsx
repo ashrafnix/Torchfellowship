@@ -1,10 +1,10 @@
 import React, { useRef } from 'react';
-import { Event } from '../types.ts';
-import Spinner from '../components/ui/Spinner.tsx';
-import useOnScreen from '../hooks/useOnScreen.ts';
+import { Event } from '../types';
+import Spinner from '../components/ui/Spinner';
+import useOnScreen from '../hooks/useOnScreen';
 import { useQuery } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
-import { tuesdayFellowship } from '../data/events.ts';
+import { useApi } from '../hooks/useApi';
+import { tuesdayFellowship } from '../data/events';
 
 const EventsPage: React.FC = () => {
   const { apiClient } = useApi();
@@ -20,13 +20,12 @@ const EventsPage: React.FC = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url('https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273117/Events_chapk4.png')` }}
         >
-            <div className="absolute inset-0 bg-brand-dark/70 backdrop-blur-sm"></div>
         </div>
         <div className="container mx-auto px-4 relative z-10">
-          <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold">
+          <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold drop-shadow-lg">
             Upcoming Events
           </h1>
-          <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-brand-text-dark">
+          <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-white drop-shadow-md">
             Join us for fellowship, worship, and growth. Discover what's happening at Torch Fellowship.
           </p>
         </div>

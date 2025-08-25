@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { useNavigate } = ReactRouterDOM as any;
-import Button from '../components/ui/Button.tsx';
-import Input from '../components/ui/Input.tsx';
-import Modal from '../components/ui/Modal.tsx';
-import Spinner from '../components/ui/Spinner.tsx';
-import { ICONS } from '../constants.tsx';
-import { useAuth } from '../hooks/useAuth.ts';
-import type { LightCampus } from '../types.ts';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Modal from '../components/ui/Modal';
+import Spinner from '../components/ui/Spinner';
+import { ICONS } from '../constants';
+import { useAuth } from '../hooks/useAuth';
+import type { LightCampus } from '../types';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { useApi } from '../hooks/useApi.ts';
+import { useApi } from '../hooks/useApi';
 import { toast } from 'react-toastify';
 
 const LightCampusesPage: React.FC = () => {

@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { ICONS } from '../../constants.tsx';
+import { ICONS } from '../../constants';
 
 interface ModalProps {
   isOpen: boolean;
@@ -25,7 +25,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
         >
             <div className="flex justify-between items-center p-4 border-b border-brand-muted">
             <h2 className="text-xl font-serif font-bold text-brand-text">{title}</h2>
-            <button onClick={onClose} className="text-brand-text-dark hover:text-white transition-colors">
+            <button onClick={onClose} className="text-brand-text-dark hover:text-white transition-colors" title="Close modal" aria-label="Close modal">
                 <ICONS.X className="w-6 h-6" />
             </button>
             </div>

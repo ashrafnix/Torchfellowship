@@ -75,13 +75,12 @@ const PrayerPage: React.FC = () => {
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url('https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273046/prayer-request_gsjalh.png')` }}
                 >
-                    <div className="absolute inset-0 bg-brand-dark/70 backdrop-blur-sm"></div>
                 </div>
                 <div className="container mx-auto px-4 relative z-10">
-                    <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold">
+                    <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold drop-shadow-lg">
                         The Power of Prayer
                     </h1>
-                    <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-brand-text-dark">
+                    <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-white drop-shadow-md">
                         Join our community in lifting up needs, celebrating answers, and believing together. You are not alone.
                     </p>
                 </div>

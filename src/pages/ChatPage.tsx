@@ -26,6 +26,17 @@ const ChatPage: React.FC = () => {
     const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
     const [hoveredMessage, setHoveredMessage] = useState<string | null>(null);
     
+    // Real-time features state
+    const [isTyping, setIsTyping] = useState(false);
+    const [typingUsers, setTypingUsers] = useState<{ [userId: string]: { name: string, timestamp: number } }>({});
+    const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+    const [isConnected, setIsConnected] = useState(false);
+    const [unreadCounts, setUnreadCounts] = useState<{ [chatId: string]: number }>({});
+    const [lastActivity, setLastActivity] = useState<{ [userId: string]: number }>({});
+    
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastTypingEmitRef = useRef<number>(0);
+    
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +47,9 @@ const ChatPage: React.FC = () => {
         queryKey: ['users'],
         queryFn: () => apiClient('/api/users', 'GET'),
         enabled: !!user,
-        select: (data) => data.filter((u: User) => u.id !== user?.id)
+        select: (data) => data.filter((u: User) => u.id !== user?.id),
+        refetchInterval: 30000, // Refresh every 30 seconds for real-time user updates
+        staleTime: 15000,
     });
 
     const { data: messages = [], isLoading: isLoadingMessages } = useQuery<ChatMessage[]>({
@@ -53,6 +66,8 @@ const ChatPage: React.FC = () => {
             return apiClient<ChatMessage[]>(url, 'GET');
         },
         enabled: !!user,
+        refetchInterval: 5000, // More frequent updates for real-time feel
+        staleTime: 3000,
     });
 
     const sendMessageMutation = useMutation({
@@ -70,7 +85,7 @@ const ChatPage: React.FC = () => {
         }
     });
 
-    // --- Socket.IO Setup ---
+    // --- Enhanced Socket.IO Setup with Real-time Features ---
     useEffect(() => {
         if (!user) return;
         
@@ -78,6 +93,18 @@ const ChatPage: React.FC = () => {
         if (token) {
             socketService.connect(token);
             
+            // Connection status
+            socketService.onConnect(() => {
+                setIsConnected(true);
+                console.log('🟢 Socket connected - Real-time features active');
+            });
+            
+            socketService.onDisconnect(() => {
+                setIsConnected(false);
+                console.log('🔴 Socket disconnected - Real-time features inactive');
+            });
+            
+            // Message events
             socketService.onNewMessage((message: ChatMessage) => {
                 let roomId;
                 if (message.chatType === 'admin') {
@@ -104,14 +131,72 @@ const ChatPage: React.FC = () => {
                         return exists ? oldData : [...oldData, message];
                     });
                     
+                    // Auto-scroll to new message
+                    setTimeout(() => scrollToBottom('smooth'), 100);
+                    
                     // Mark as read for private messages to me
                     if (message.recipientId === user.id && message._id) {
                         socketService.confirmMessageDelivered(message._id);
                         setTimeout(() => markAsRead(message._id!), 1000);
                     }
+                } else {
+                    // Update unread count for other chats
+                    if (message.recipientId === user.id || (message.chatType === 'community' && message.authorId !== user.id)) {
+                        setUnreadCounts(prev => ({
+                            ...prev,
+                            [message.chatType === 'community' ? 'community' : message.authorId]: (prev[message.chatType === 'community' ? 'community' : message.authorId] || 0) + 1
+                        }));
+                    }
                 }
             });
             
+            // Typing indicators
+            socketService.onUserTyping(({ userId, userName, chatId }) => {
+                if (userId !== user.id && chatId === activeChat.id) {
+                    setTypingUsers(prev => ({
+                        ...prev,
+                        [userId]: { name: userName, timestamp: Date.now() }
+                    }));
+                    
+                    // Auto-clear typing indicator after 3 seconds
+                    setTimeout(() => {
+                        setTypingUsers(prev => {
+                            const updated = { ...prev };
+                            delete updated[userId];
+                            return updated;
+                        });
+                    }, 3000);
+                }
+            });
+            
+            socketService.onUserStoppedTyping(({ userId }) => {
+                setTypingUsers(prev => {
+                    const updated = { ...prev };
+                    delete updated[userId];
+                    return updated;
+                });
+            });
+            
+            // Online status
+            socketService.onUserOnline(({ userId }) => {
+                setOnlineUsers(prev => new Set([...prev, userId]));
+                setLastActivity(prev => ({ ...prev, [userId]: Date.now() }));
+            });
+            
+            socketService.onUserOffline(({ userId }) => {
+                setOnlineUsers(prev => {
+                    const updated = new Set(prev);
+                    updated.delete(userId);
+                    return updated;
+                });
+            });
+            
+            // User activity
+            socketService.onUserActivity(({ userId }) => {
+                setLastActivity(prev => ({ ...prev, [userId]: Date.now() }));
+            });
+            
+            // Message status updates
             socketService.onMessageRead(({ messageId, userId }) => {
                 queryClient.setQueryData(['messages', activeChat.id], (oldData: ChatMessage[] | undefined) => {
                     if (!oldData) return oldData;
@@ -142,6 +227,13 @@ const ChatPage: React.FC = () => {
             socketService.offNewMessage();
             socketService.offMessageRead();
             socketService.offMessageStatusUpdated();
+            socketService.offUserTyping();
+            socketService.offUserStoppedTyping();
+            socketService.offUserOnline();
+            socketService.offUserOffline();
+            socketService.offUserActivity();
+            socketService.offConnect();
+            socketService.offDisconnect();
         };
     }, [user, activeChat.id, activeChat.type, queryClient]);
     
@@ -317,6 +409,87 @@ const ChatPage: React.FC = () => {
         }
     };
     
+    // --- Real-time Typing Indicator Logic ---
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setInput(value);
+        
+        const now = Date.now();
+        const timeSinceLastEmit = now - lastTypingEmitRef.current;
+        
+        if (value.length > 0 && !isTyping && timeSinceLastEmit > 1000) {
+            setIsTyping(true);
+            socketService.emitTyping(activeChat.id, user?.fullName || user?.email || 'Anonymous');
+            lastTypingEmitRef.current = now;
+        }
+        
+        // Clear existing timeout
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+        
+        // Set new timeout to stop typing
+        typingTimeoutRef.current = setTimeout(() => {
+            if (isTyping) {
+                setIsTyping(false);
+                socketService.emitStoppedTyping(activeChat.id);
+            }
+        }, 2000);
+        
+        // Stop typing immediately if input is empty
+        if (value.length === 0 && isTyping) {
+            setIsTyping(false);
+            socketService.emitStoppedTyping(activeChat.id);
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        }
+    };
+    
+    // Clear unread count when switching chats
+    useEffect(() => {
+        setUnreadCounts(prev => {
+            const updated = { ...prev };
+            delete updated[activeChat.id];
+            return updated;
+        });
+    }, [activeChat.id]);
+    
+    // --- User Activity Tracking ---
+    useEffect(() => {
+        if (!user || !isConnected) return;
+        
+        const handleUserActivity = () => {
+            socketService.emitUserActivity();
+        };
+        
+        // Track various user activities
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        
+        events.forEach(event => {
+            document.addEventListener(event, handleUserActivity, { passive: true });
+        });
+        
+        // Send activity ping every 30 seconds
+        const activityInterval = setInterval(handleUserActivity, 30000);
+        
+        return () => {
+            events.forEach(event => {
+                document.removeEventListener(event, handleUserActivity);
+            });
+            clearInterval(activityInterval);
+        };
+    }, [user, isConnected]);
+    
+    // Clean up typing timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current);
+            }
+        };
+    }, []);
+    
     return (
         <div className="container mx-auto p-2 md:p-8 h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)]">
             <div className="flex h-full bg-brand-surface rounded-lg shadow-2xl border border-brand-muted/50 overflow-hidden relative">
@@ -340,14 +513,19 @@ const ChatPage: React.FC = () => {
                                 setActiveChat({ id: 'community', name: 'Community Chat', type: 'community' });
                                 setSidebarOpen(false);
                             }}
-                            className={`p-3 rounded-md mb-2 cursor-pointer transition-colors ${activeChat.id === 'community' ? 'bg-brand-gold text-brand-dark' : 'hover:bg-brand-muted'}`}
+                            className={`p-3 rounded-md mb-2 cursor-pointer transition-colors relative ${activeChat.id === 'community' ? 'bg-brand-gold text-brand-dark' : 'hover:bg-brand-muted'}`}
                         >
                             <div className="flex items-center space-x-3">
                                 <div className="p-2 bg-brand-muted rounded-full"><ICONS.Users className="h-5 w-5"/></div>
-                                <div>
+                                <div className="flex-1">
                                     <h3 className={`font-bold ${activeChat.id === 'community' ? '' : 'text-white'}`}>Community Chat</h3>
-                                    <p className={`text-xs ${activeChat.id === 'community' ? 'text-brand-dark/70' : 'text-brand-text-dark'}`}>Global discussion</p>
+                                    <p className={`text-xs ${activeChat.id === 'community' ? 'text-brand-dark/70' : 'text-brand-text-dark'}`}>Global discussion • {onlineUsers.size} online</p>
                                 </div>
+                                {unreadCounts.community > 0 && (
+                                    <div className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center unread-badge">
+                                        {unreadCounts.community > 9 ? '9+' : unreadCounts.community}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -372,50 +550,92 @@ const ChatPage: React.FC = () => {
 
                         {/* Private Messages */}
                         <h3 className="text-lg font-bold font-serif text-white mt-6 mb-2">Private Messages</h3>
-                         {users.map(u => (
-                            <div 
-                                key={u.id}
-                                onClick={() => {
-                                    setActiveChat({ id: u.id, name: u.fullName || u.email, type: 'private', avatar: u.avatarUrl || `https://ui-avatars.com/api/?name=${u.fullName || u.email}&background=2B2F36&color=EAEAEA` });
-                                    setSidebarOpen(false);
-                                }}
-                                className={`p-3 rounded-md mb-2 cursor-pointer transition-colors ${activeChat.id === u.id ? 'bg-brand-gold text-brand-dark' : 'hover:bg-brand-muted'}`}
-                            >
-                                <div className="flex items-center space-x-3">
-                                     <div className="relative">
-                                         <img src={u.avatarUrl || `https://ui-avatars.com/api/?name=${u.fullName || u.email}&background=2B2F36&color=EAEAEA`} alt={u.fullName || ''} className="h-10 w-10 rounded-full object-cover" />
-                                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-brand-dark/50"></div>
-                                     </div>
-                                     <div>
-                                        <h3 className={`font-bold truncate ${activeChat.id === u.id ? '' : 'text-white'}`}>{u.fullName || u.email}</h3>
-                                     </div>
+                         {users.map(u => {
+                            const isOnline = onlineUsers.has(u.id);
+                            const unreadCount = unreadCounts[u.id] || 0;
+                            const lastSeen = lastActivity[u.id];
+                            
+                            return (
+                                <div 
+                                    key={u.id}
+                                    onClick={() => {
+                                        setActiveChat({ id: u.id, name: u.fullName || u.email, type: 'private', avatar: u.avatarUrl || `https://ui-avatars.com/api/?name=${u.fullName || u.email}&background=2B2F36&color=EAEAEA` });
+                                        setSidebarOpen(false);
+                                    }}
+                                    className={`p-3 rounded-md mb-2 cursor-pointer transition-colors relative ${activeChat.id === u.id ? 'bg-brand-gold text-brand-dark' : 'hover:bg-brand-muted'}`}
+                                >
+                                    <div className="flex items-center space-x-3">
+                                         <div className="relative">
+                                             <img src={u.avatarUrl || `https://ui-avatars.com/api/?name=${u.fullName || u.email}&background=2B2F36&color=EAEAEA`} alt={u.fullName || ''} className="h-10 w-10 rounded-full object-cover" />
+                                             <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-brand-dark/50 ${
+                                                isOnline ? 'bg-green-500' : 'bg-gray-500'
+                                             }`}></div>
+                                         </div>
+                                         <div className="flex-1 min-w-0">
+                                            <h3 className={`font-bold truncate ${activeChat.id === u.id ? '' : 'text-white'}`}>{u.fullName || u.email}</h3>
+                                            <p className={`text-xs truncate ${activeChat.id === u.id ? 'text-brand-dark/70' : 'text-brand-text-dark'}`}>
+                                                {isOnline ? 'Online now' : 
+                                                 lastSeen ? `Last seen ${new Date(lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 
+                                                 'Offline'}
+                                            </p>
+                                         </div>
+                                         {unreadCount > 0 && (
+                                            <div className="bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center flex-shrink-0 unread-badge">
+                                                {unreadCount > 9 ? '9+' : unreadCount}
+                                            </div>
+                                         )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
                 {/* Main Chat Area */}
                 <div className="flex-1 flex flex-col relative">
                     {/* Header */}
-                    <div className="p-4 border-b border-brand-muted/50 flex items-center space-x-3">
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="md:hidden !p-2 text-white hover:bg-brand-muted"
-                            onClick={() => setSidebarOpen(true)}
-                        >
-                            <ICONS.Menu className="h-6 w-6" />
-                        </Button>
-                        { activeChat.type === 'private' && activeChat.avatar && <img src={activeChat.avatar} alt={`${activeChat.name} avatar`} className="h-10 w-10 rounded-full object-cover" /> }
-                        { activeChat.type === 'admin' && <div className="p-2 bg-red-600 rounded-full"><ICONS.Shield className="h-6 w-6 text-white"/></div> }
-                        { activeChat.type === 'community' && <div className="p-2 bg-brand-muted rounded-full"><ICONS.Users className="h-6 w-6"/></div> }
-                        <div>
-                            <h2 className="text-xl font-bold text-white">{activeChat.name}</h2>
-                            <p className="text-sm text-brand-text-dark">
-                                {activeChat.type === 'community' ? 'Global discussion for all members' : 
-                                 activeChat.type === 'admin' ? 'Admin-only discussion' : 'Private conversation'}
-                            </p>
+                    <div className="p-4 border-b border-brand-muted/50 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="md:hidden !p-2 text-white hover:bg-brand-muted"
+                                onClick={() => setSidebarOpen(true)}
+                            >
+                                <ICONS.Menu className="h-6 w-6" />
+                            </Button>
+                            { activeChat.type === 'private' && activeChat.avatar && <img src={activeChat.avatar} alt={`${activeChat.name} avatar`} className="h-10 w-10 rounded-full object-cover" /> }
+                            { activeChat.type === 'admin' && <div className="p-2 bg-red-600 rounded-full"><ICONS.Shield className="h-6 w-6 text-white"/></div> }
+                            { activeChat.type === 'community' && <div className="p-2 bg-brand-muted rounded-full"><ICONS.Users className="h-6 w-6"/></div> }
+                            <div>
+                                <div className="flex items-center space-x-2">
+                                    <h2 className="text-xl font-bold text-white">{activeChat.name}</h2>
+                                    {activeChat.type === 'private' && onlineUsers.has(activeChat.id) && (
+                                        <div className="flex items-center space-x-1">
+                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                            <span className="text-xs text-green-400 font-medium">Online</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-sm text-brand-text-dark">
+                                    {activeChat.type === 'community' ? `Global discussion for all members • ${onlineUsers.size} online` : 
+                                     activeChat.type === 'admin' ? 'Admin-only discussion' : 
+                                     onlineUsers.has(activeChat.id) ? 'Online now' : 
+                                     lastActivity[activeChat.id] ? `Last seen ${new Date(lastActivity[activeChat.id]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Private conversation'}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        {/* Real-time Connection Status */}
+                        <div className="flex items-center space-x-2">
+                            <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                isConnected ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                            }`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${
+                                    isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'
+                                }`}></div>
+                                <span>{isConnected ? 'Live' : 'Offline'}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -510,23 +730,32 @@ const ChatPage: React.FC = () => {
                                         )
                                     })
                                 )}
-                                {/* Typing Indicator Placeholder */}
-                                {/* 
-                                This is a UI placeholder. A real implementation would require a WebSocket
-                                event to set an `isTyping` state.
-                                { isTyping && !activeChat.isCommunity && (
-                                <div className="flex items-end gap-3 mt-4">
-                                    <div className="w-8 flex-shrink-0">
-                                        <img src={activeChat.avatar} alt={activeChat.name} className="h-8 w-8 rounded-full object-cover"/>
-                                    </div>
-                                    <div className="max-w-md rounded-lg px-4 py-3 shadow bg-brand-muted text-white rounded-bl-none">
-                                        <div className="typing-indicator">
-                                            <span></span><span></span><span></span>
+                                
+                                {/* Real-time Typing Indicators */}
+                                {Object.keys(typingUsers).length > 0 && (
+                                    <div className="flex items-end gap-3 mt-4 animate-fadeIn">
+                                        <div className="w-8 flex-shrink-0">
+                                            <div className="h-8 w-8 bg-gradient-to-br from-brand-gold to-yellow-500 rounded-full flex items-center justify-center">
+                                                <span className="text-brand-dark font-bold text-sm">
+                                                    {Object.values(typingUsers)[0].name.charAt(0).toUpperCase()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="max-w-md rounded-[20px] px-5 py-4 bg-gradient-to-br from-[#303238] to-[#222428] border border-white/5">
+                                            <div className="flex items-center space-x-1">
+                                                <span className="text-sm text-brand-text-dark">
+                                                    {Object.keys(typingUsers).length === 1 
+                                                        ? `${Object.values(typingUsers)[0].name} is typing`
+                                                        : `${Object.keys(typingUsers).length} people are typing`
+                                                    }
+                                                </span>
+                                                <div className="typing-indicator ml-2">
+                                                    <span></span><span></span><span></span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                                 )}
-                                */}
                             </div>
                         )}
                     </div>
@@ -606,7 +835,7 @@ const ChatPage: React.FC = () => {
                             <input
                                 type="text"
                                 value={input}
-                                onChange={(e) => setInput(e.target.value)}
+                                onChange={handleInputChange}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                                 placeholder={`Message ${activeChat.name}...`}
                                 className="flex-1 bg-transparent border-none py-3 px-2 text-white placeholder-gray-500 focus:ring-0 focus:outline-none"
@@ -664,9 +893,49 @@ const ChatPage: React.FC = () => {
                 }
                 .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
                 .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+                
                 @keyframes bounce {
                     0%, 80%, 100% { transform: scale(0); }
                     40% { transform: scale(1.0); }
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                
+                .animate-fadeIn {
+                    animation: fadeIn 0.3s ease-out forwards;
+                }
+                
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                }
+                
+                .animate-pulse {
+                    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                }
+                
+                /* Real-time connection indicator */
+                .connection-pulse {
+                    animation: connectionPulse 2s ease-in-out infinite;
+                }
+                
+                @keyframes connectionPulse {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.7; transform: scale(0.95); }
+                }
+                
+                /* Unread message badge animation */
+                .unread-badge {
+                    animation: unreadBounce 0.4s ease-out;
+                }
+                
+                @keyframes unreadBounce {
+                    0% { transform: scale(0) rotate(45deg); }
+                    50% { transform: scale(1.2) rotate(22.5deg); }
+                    100% { transform: scale(1) rotate(0deg); }
                 }
             `}</style>
         </div>

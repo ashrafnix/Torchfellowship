@@ -5,14 +5,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { ICONS } from '../../constants';
 
 const MobileNavLink: React.FC<{ to: string; children: React.ReactNode; closeMenu: () => void; }> = ({ to, children, closeMenu }) => {
-    const activeLinkClass = 'text-brand-gold bg-brand-muted';
-    const inactiveLinkClass = 'text-brand-text hover:bg-brand-muted';
+    const activeLinkClass = 'text-brand-gold bg-brand-muted/50 border-l-4 border-brand-gold';
+    const inactiveLinkClass = 'text-brand-text hover:bg-brand-muted/30 hover:text-white border-l-4 border-transparent';
 
     return (
         <NavLink
             to={to}
             onClick={closeMenu}
-            className={({ isActive }: { isActive: boolean}) => `block px-4 py-3 rounded-md text-lg font-medium transition-colors duration-200 ${isActive ? activeLinkClass : inactiveLinkClass}`}
+            className={({ isActive }: { isActive: boolean}) => `block px-4 py-3 text-base font-medium transition-all duration-200 font-sans border rounded-lg ${isActive ? activeLinkClass : inactiveLinkClass} hover:border-brand-muted`}
         >
             {children}
         </NavLink>
@@ -77,6 +77,8 @@ const Header: React.FC = () => {
     const { user, logout, isAdmin } = useAuth();
     const [isProfileOpen, setProfileOpen] = useState(false);
     const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [mobileSearchQuery, setMobileSearchQuery] = useState('');
+    const [activeSection, setActiveSection] = useState<'main' | 'about' | 'community' | 'getInvolved'>('main');
     const profileRef = useRef<HTMLDivElement>(null);
 
     const activeLinkClass = 'text-brand-gold';
@@ -104,7 +106,11 @@ const Header: React.FC = () => {
         };
     }, [isMobileMenuOpen]);
 
-    const closeMobileMenu = () => setMobileMenuOpen(false);
+    const closeMobileMenu = () => {
+        setMobileMenuOpen(false);
+        setMobileSearchQuery('');
+        setActiveSection('main');
+    };
 
     return (
         <>
@@ -186,37 +192,215 @@ const Header: React.FC = () => {
             </header>
 
             {isMobileMenuOpen && (
-                <div className="md:hidden fixed inset-0 bg-brand-dark z-50 animate-fadeIn" role="dialog" aria-modal="true">
-                    <div className="absolute top-5 right-4">
-                        <button onClick={closeMobileMenu} className="p-2" aria-label="Close menu"><ICONS.X className="h-8 w-8 text-brand-text-dark" /></button>
+                <div className="md:hidden fixed inset-0 bg-black/95 backdrop-blur-md z-50 animate-fadeIn" role="dialog" aria-modal="true">
+                    {/* Mobile Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-brand-muted/30">
+                        <div className="flex items-center space-x-3">
+                            <img className="h-8 w-auto" src="https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273222/Torch-logo_ithw3f.png" alt="Torch Fellowship" />
+                            <span className="text-white text-lg font-serif font-bold">Torch Fellowship</span>
+                        </div>
+                        <button 
+                            onClick={closeMobileMenu} 
+                            className="p-2 rounded-full hover:bg-brand-muted/30 transition-colors" 
+                            aria-label="Close menu"
+                        >
+                            <ICONS.X className="h-6 w-6 text-brand-text-dark hover:text-white transition-colors" />
+                        </button>
                     </div>
-                    <div className="pt-24 pb-8 px-6 h-full overflow-y-auto admin-scroll">
-                        <nav className="flex flex-col space-y-2">
-                            <MobileNavLink to="/" closeMenu={closeMobileMenu}>Home</MobileNavLink>
-                            <MobileNavLink to="/about" closeMenu={closeMobileMenu}>About Us</MobileNavLink>
-                            <MobileNavLink to="/teachings" closeMenu={closeMobileMenu}>Teachings</MobileNavLink>
-                            <MobileNavLink to="/events" closeMenu={closeMobileMenu}>Events</MobileNavLink>
-                            <MobileNavLink to="/blog" closeMenu={closeMobileMenu}>Blog</MobileNavLink>
-                            <MobileNavLink to="/leadership" closeMenu={closeMobileMenu}>Leadership Philosophy</MobileNavLink>
-                            <MobileNavLink to="/leaders" closeMenu={closeMobileMenu}>Our Leaders</MobileNavLink>
-                            <MobileNavLink to="/prayer" closeMenu={closeMobileMenu}>Prayer</MobileNavLink>
-                            <MobileNavLink to="/light-campuses" closeMenu={closeMobileMenu}>Light Campuses</MobileNavLink>
-                            <MobileNavLink to="/testimonies" closeMenu={closeMobileMenu}>Testimonies</MobileNavLink>
-                            <MobileNavLink to="/ministries" closeMenu={closeMobileMenu}>Ministries</MobileNavLink>
-                            <MobileNavLink to="/torch-kids" closeMenu={closeMobileMenu}>Torch Kids</MobileNavLink>
-                            <MobileNavLink to="/serve" closeMenu={closeMobileMenu}>Serve</MobileNavLink>
-                            <MobileNavLink to="/give" closeMenu={closeMobileMenu}>Give</MobileNavLink>
-                            <MobileNavLink to="/contact" closeMenu={closeMobileMenu}>Contact</MobileNavLink>
-                            
-                            <div className="border-t border-brand-muted my-4 !mt-6"></div>
 
-                            {user && (
-                                <>
-                                    <MobileNavLink to="/chat" closeMenu={closeMobileMenu}>Chat</MobileNavLink>
-                                    {isAdmin && <MobileNavLink to="/admin" closeMenu={closeMobileMenu}>Admin Panel</MobileNavLink>}
-                                </>
+                    {/* User Info Section */}
+                    {user && (
+                        <div className="p-4 border-b border-brand-muted/30">
+                            <div className="flex items-center space-x-3 mb-3">
+                                <div className="relative">
+                                    {user?.avatarUrl ? (
+                                        <img 
+                                            src={user.avatarUrl} 
+                                            alt="profile" 
+                                            className="h-12 w-12 rounded-full object-cover border-2 border-brand-gold/30" 
+                                        />
+                                    ) : (
+                                        <div className="h-12 w-12 bg-gradient-to-br from-brand-gold to-yellow-500 rounded-full flex items-center justify-center">
+                                            <span className="text-brand-dark font-bold text-lg">
+                                                {user.fullName?.charAt(0).toUpperCase() || 'U'}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-black"></div>
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-white font-sans font-semibold">{user.fullName || 'User'}</h3>
+                                    <p className="text-brand-text-dark text-sm font-sans">{user.email}</p>
+                                    {isAdmin && (
+                                        <span className="inline-flex items-center px-2 py-0.5 text-xs font-sans font-medium bg-blue-500/20 text-blue-400 rounded-full border border-blue-500/30 mt-1">
+                                            Admin
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex space-x-2">
+                                <Link 
+                                    to="/profile"
+                                    onClick={closeMobileMenu}
+                                    className="flex-1 flex items-center justify-center px-3 py-2 bg-brand-muted/50 hover:bg-brand-muted rounded-lg text-sm font-sans font-medium text-brand-text-dark hover:text-white transition-all"
+                                >
+                                    Profile
+                                </Link>
+                                <button 
+                                    onClick={() => { logout(); closeMobileMenu(); }}
+                                    className="flex items-center justify-center px-3 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-sm font-sans font-medium text-red-400 hover:text-red-300 transition-all"
+                                >
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Search Section */}
+                    <div className="p-4 border-b border-brand-muted/30">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search pages..."
+                                value={mobileSearchQuery}
+                                onChange={(e) => setMobileSearchQuery(e.target.value)}
+                                className="w-full px-4 py-3 bg-brand-muted/30 border border-brand-muted rounded-xl text-white placeholder-brand-text-dark focus:outline-none focus:ring-2 focus:ring-brand-gold/50 focus:border-brand-gold transition-all font-sans"
+                            />
+                            {mobileSearchQuery && (
+                                <button
+                                    onClick={() => setMobileSearchQuery('')}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-brand-text-dark hover:text-white text-lg"
+                                >
+                                    ×
+                                </button>
                             )}
-                        </nav>
+                        </div>
+                    </div>
+
+                    {/* Navigation Content */}
+                    <div className="flex-1 overflow-y-auto admin-scroll">
+                        {activeSection === 'main' ? (
+                            <div className="p-4 space-y-2">
+                                {/* Quick Actions */}
+                                <div className="mb-6">
+                                    <h3 className="text-brand-gold font-serif font-semibold mb-3 text-sm uppercase tracking-wide">Quick Actions</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Link 
+                                            to="/prayer"
+                                            onClick={closeMobileMenu}
+                                            className="flex items-center justify-center p-4 bg-gradient-to-br from-blue-500/20 to-purple-500/20 hover:from-blue-500/30 hover:to-purple-500/30 rounded-xl border border-blue-500/30 transition-all"
+                                        >
+                                            <span className="text-white text-sm font-sans font-medium">Prayer</span>
+                                        </Link>
+                                        <Link 
+                                            to="/give"
+                                            onClick={closeMobileMenu}
+                                            className="flex items-center justify-center p-4 bg-gradient-to-br from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 rounded-xl border border-green-500/30 transition-all"
+                                        >
+                                            <span className="text-white text-sm font-sans font-medium">Give</span>
+                                        </Link>
+                                    </div>
+                                </div>
+
+                                {/* Main Navigation */}
+                                <div className="space-y-1">
+                                    <MobileNavLink to="/" closeMenu={closeMobileMenu}>Home</MobileNavLink>
+                                    <MobileNavLink to="/teachings" closeMenu={closeMobileMenu}>Teachings</MobileNavLink>
+                                    
+                                    {/* Section Buttons */}
+                                    <button
+                                        onClick={() => setActiveSection('about')}
+                                        className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-base font-sans font-medium text-brand-text hover:bg-brand-muted/50 hover:text-white transition-all duration-200 border border-transparent hover:border-brand-muted"
+                                    >
+                                        <span>About Us</span>
+                                        <span className="text-brand-text-dark text-sm">→</span>
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => setActiveSection('community')}
+                                        className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-base font-sans font-medium text-brand-text hover:bg-brand-muted/50 hover:text-white transition-all duration-200 border border-transparent hover:border-brand-muted"
+                                    >
+                                        <span>Community</span>
+                                        <span className="text-brand-text-dark text-sm">→</span>
+                                    </button>
+                                    
+                                    <button
+                                        onClick={() => setActiveSection('getInvolved')}
+                                        className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-base font-sans font-medium text-brand-text hover:bg-brand-muted/50 hover:text-white transition-all duration-200 border border-transparent hover:border-brand-muted"
+                                    >
+                                        <span>Get Involved</span>
+                                        <span className="text-brand-text-dark text-sm">→</span>
+                                    </button>
+                                </div>
+
+                                {/* User Actions */}
+                                {!user && (
+                                    <div className="mt-6 pt-4 border-t border-brand-muted/30">
+                                        <MobileNavLink to="/login" closeMenu={closeMobileMenu}>Sign In</MobileNavLink>
+                                        <MobileNavLink to="/register" closeMenu={closeMobileMenu}>Register</MobileNavLink>
+                                    </div>
+                                )}
+                                
+                                {user && (
+                                    <div className="mt-6 pt-4 border-t border-brand-muted/30">
+                                        <MobileNavLink to="/chat" closeMenu={closeMobileMenu}>Chat</MobileNavLink>
+                                        {isAdmin && <MobileNavLink to="/admin" closeMenu={closeMobileMenu}>Admin Panel</MobileNavLink>}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="p-4">
+                                {/* Back Button */}
+                                <button
+                                    onClick={() => setActiveSection('main')}
+                                    className="flex items-center mb-4 text-brand-gold hover:text-white transition-colors"
+                                >
+                                    <span className="text-sm mr-2">←</span>
+                                    <span className="font-sans font-medium">Back to Main</span>
+                                </button>
+
+                                {/* Section Content */}
+                                {activeSection === 'about' && (
+                                    <div className="space-y-1">
+                                        <h3 className="text-brand-gold font-semibold mb-3 text-lg font-serif">About Us</h3>
+                                        <MobileNavLink to="/about" closeMenu={closeMobileMenu}>About</MobileNavLink>
+                                        <MobileNavLink to="/leadership" closeMenu={closeMobileMenu}>Leadership Philosophy</MobileNavLink>
+                                        <MobileNavLink to="/leaders" closeMenu={closeMobileMenu}>Our Leaders</MobileNavLink>
+                                        <MobileNavLink to="/ministries" closeMenu={closeMobileMenu}>Ministries</MobileNavLink>
+                                        <MobileNavLink to="/torch-kids" closeMenu={closeMobileMenu}>Torch Kids</MobileNavLink>
+                                    </div>
+                                )}
+
+                                {activeSection === 'community' && (
+                                    <div className="space-y-1">
+                                        <h3 className="text-brand-gold font-semibold mb-3 text-lg font-serif">Community</h3>
+                                        <MobileNavLink to="/events" closeMenu={closeMobileMenu}>Events</MobileNavLink>
+                                        <MobileNavLink to="/blog" closeMenu={closeMobileMenu}>Blog</MobileNavLink>
+                                        <MobileNavLink to="/prayer" closeMenu={closeMobileMenu}>Prayer</MobileNavLink>
+                                        <MobileNavLink to="/light-campuses" closeMenu={closeMobileMenu}>Light Campuses</MobileNavLink>
+                                        <MobileNavLink to="/testimonies" closeMenu={closeMobileMenu}>Testimonies</MobileNavLink>
+                                    </div>
+                                )}
+
+                                {activeSection === 'getInvolved' && (
+                                    <div className="space-y-1">
+                                        <h3 className="text-brand-gold font-semibold mb-3 text-lg font-serif">Get Involved</h3>
+                                        <MobileNavLink to="/serve" closeMenu={closeMobileMenu}>Serve</MobileNavLink>
+                                        <MobileNavLink to="/give" closeMenu={closeMobileMenu}>Give</MobileNavLink>
+                                        <MobileNavLink to="/contact" closeMenu={closeMobileMenu}>Contact</MobileNavLink>
+                                        <MobileNavLink to="/new-converts" closeMenu={closeMobileMenu}>New Converts</MobileNavLink>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="p-4 border-t border-brand-muted/30">
+                        <div className="text-center text-brand-text-dark text-sm font-sans">
+                            <p>© 2024 Torch Fellowship</p>
+                            <p className="text-xs mt-1">Spreading light & love</p>
+                        </div>
                     </div>
                 </div>
             )}

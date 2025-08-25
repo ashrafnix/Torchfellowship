@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import * as ReactRouterDOM from 'react-router-dom';
 const { Link } = ReactRouterDOM as any;
-import { ICONS } from '../constants.tsx';
-import Button from '../components/ui/Button.tsx';
+import { ICONS } from '../constants';
+import Button from '../components/ui/Button';
 
 // Accordion Item Component
 const Belief: React.FC<{ title: string; description: string }> = ({ title, description }) => {
@@ -41,13 +41,12 @@ const AboutPage: React.FC = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url('https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273065/About-us_txonpx.png')` }}
         >
-            <div className="absolute inset-0 bg-brand-dark/70 backdrop-blur-sm"></div>
         </div>
         <div className="container mx-auto px-4 relative z-10">
-          <h1 className="text-5xl md:text-7xl font-serif font-extrabold tracking-tight text-brand-gold">
+          <h1 className="text-5xl md:text-7xl font-serif font-extrabold tracking-tight text-brand-gold drop-shadow-lg">
             Our Story & Vision
           </h1>
-          <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-brand-text-dark">
+          <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-white drop-shadow-md">
             Discover the heart behind Torch Fellowship: our journey, our purpose, and our unshakeable faith in what God is doing.
           </p>
         </div>

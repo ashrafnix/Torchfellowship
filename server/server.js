@@ -104,7 +104,13 @@ const io = new Server(server, {
 });
 const PORT = process.env.PORT || 8080;
 
-// Socket.IO connection handling
+// Socket.IO connection handling with comprehensive real-time features
+
+// Store online users and their activity
+const onlineUsers = new Map(); // userId -> { socketId, userName, lastActivity }
+const userSockets = new Map(); // socketId -> userId
+const typingUsers = new Map(); // roomId -> Set of { userId, userName }
+
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) {
@@ -114,44 +120,287 @@ io.use((socket, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'a-very-secret-key');
     socket.userId = decoded.id;
+    socket.userName = decoded.fullName || decoded.email || 'Anonymous';
     next();
   } catch (err) {
     next(new Error('Authentication error'));
   }
 });
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id, 'User ID:', socket.userId);
+io.on('connection', async (socket) => {
+  console.log(`🟢 User connected: ${socket.id} | User ID: ${socket.userId} | Name: ${socket.userName}`);
   
-  socket.on('join-room', (roomId) => {
-    socket.join(roomId);
-    console.log(`User ${socket.userId} joined room ${roomId}`);
+  // Store user as online
+  onlineUsers.set(socket.userId, {
+    socketId: socket.id,
+    userName: socket.userName,
+    lastActivity: Date.now()
+  });
+  userSockets.set(socket.id, socket.userId);
+  
+  // Broadcast user online status to all clients
+  socket.broadcast.emit('user-online', { 
+    userId: socket.userId, 
+    userName: socket.userName 
   });
   
+  // Send current online users to the newly connected user
+  const currentOnlineUsers = Array.from(onlineUsers.entries()).map(([userId, data]) => ({
+    userId,
+    userName: data.userName,
+    lastActivity: data.lastActivity
+  }));
+  socket.emit('online-users-list', currentOnlineUsers);
+  
+  // --- Room Management ---
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+    console.log(`🏠 User ${socket.userName} (${socket.userId}) joined room: ${roomId}`);
+  });
+  
+  socket.on('leave-room', (roomId) => {
+    socket.leave(roomId);
+    console.log(`🚪 User ${socket.userName} (${socket.userId}) left room: ${roomId}`);
+    
+    // Clear typing status when leaving room
+    if (typingUsers.has(roomId)) {
+      const typing = typingUsers.get(roomId);
+      const userTyping = Array.from(typing).find(t => t.userId === socket.userId);
+      if (userTyping) {
+        typing.delete(userTyping);
+        socket.to(roomId).emit('user-stopped-typing', { 
+          userId: socket.userId, 
+          chatId: roomId 
+        });
+      }
+    }
+  });
+  
+  // --- Message Delivery and Read Status ---
   socket.on('message-delivered', async (messageId) => {
     try {
       const db = getDb();
       await db.collection('messages').updateOne(
         { _id: new ObjectId(messageId) },
-        { $set: { delivered: true } }
+        { $set: { delivered: true, deliveredAt: new Date() } }
       );
       
       const message = await db.collection('messages').findOne({ _id: new ObjectId(messageId) });
-      if (message && message.recipientId) {
-        const roomId = [message.authorId, message.recipientId].sort().join('-');
-        io.to(roomId).emit('message-status-updated', { messageId, delivered: true });
+      if (message) {
+        let roomId;
+        if (message.chatType === 'private' && message.recipientId) {
+          roomId = [message.authorId, message.recipientId].sort().join('-');
+        } else if (message.chatType === 'community') {
+          roomId = 'community';
+        } else if (message.chatType === 'admin') {
+          roomId = 'admin';
+        }
+        
+        if (roomId) {
+          io.to(roomId).emit('message-status-updated', { 
+            messageId, 
+            delivered: true,
+            deliveredAt: new Date()
+          });
+        }
       }
     } catch (error) {
-      console.error('Error marking message as delivered:', error);
+      console.error('❌ Error marking message as delivered:', error);
     }
   });
   
+  socket.on('message-read', async (messageId) => {
+    try {
+      const db = getDb();
+      await db.collection('messages').updateOne(
+        { _id: new ObjectId(messageId) },
+        { $set: { read: true, readAt: new Date() } }
+      );
+      
+      const message = await db.collection('messages').findOne({ _id: new ObjectId(messageId) });
+      if (message) {
+        let roomId;
+        if (message.chatType === 'private' && message.recipientId) {
+          roomId = [message.authorId, message.recipientId].sort().join('-');
+        } else if (message.chatType === 'community') {
+          roomId = 'community';
+        } else if (message.chatType === 'admin') {
+          roomId = 'admin';
+        }
+        
+        if (roomId) {
+          io.to(roomId).emit('message-read', { 
+            messageId, 
+            userId: socket.userId 
+          });
+          io.to(roomId).emit('message-status-updated', { 
+            messageId, 
+            read: true,
+            readAt: new Date()
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error marking message as read:', error);
+    }
+  });
+  
+  // --- Typing Indicators ---
+  socket.on('user-typing', ({ chatId, userName }) => {
+    console.log(`⌨️ User ${userName} is typing in ${chatId}`);
+    
+    if (!typingUsers.has(chatId)) {
+      typingUsers.set(chatId, new Set());
+    }
+    
+    const typing = typingUsers.get(chatId);
+    const existingTyping = Array.from(typing).find(t => t.userId === socket.userId);
+    
+    if (!existingTyping) {
+      typing.add({ userId: socket.userId, userName });
+      socket.to(chatId).emit('user-typing', { 
+        userId: socket.userId, 
+        userName, 
+        chatId 
+      });
+    }
+    
+    // Auto-clear typing after 3 seconds
+    setTimeout(() => {
+      const currentTyping = typingUsers.get(chatId);
+      if (currentTyping) {
+        const userTyping = Array.from(currentTyping).find(t => t.userId === socket.userId);
+        if (userTyping) {
+          currentTyping.delete(userTyping);
+          socket.to(chatId).emit('user-stopped-typing', { 
+            userId: socket.userId, 
+            chatId 
+          });
+        }
+      }
+    }, 3000);
+  });
+  
+  socket.on('user-stopped-typing', ({ chatId }) => {
+    console.log(`⌨️ User ${socket.userName} stopped typing in ${chatId}`);
+    
+    if (typingUsers.has(chatId)) {
+      const typing = typingUsers.get(chatId);
+      const userTyping = Array.from(typing).find(t => t.userId === socket.userId);
+      if (userTyping) {
+        typing.delete(userTyping);
+        socket.to(chatId).emit('user-stopped-typing', { 
+          userId: socket.userId, 
+          chatId 
+        });
+      }
+    }
+  });
+  
+  // --- User Activity Tracking ---
+  socket.on('user-activity', () => {
+    const userData = onlineUsers.get(socket.userId);
+    if (userData) {
+      userData.lastActivity = Date.now();
+      onlineUsers.set(socket.userId, userData);
+      
+      // Broadcast activity to other users
+      socket.broadcast.emit('user-activity', {
+        userId: socket.userId,
+        timestamp: userData.lastActivity
+      });
+    }
+  });
+  
+  // --- Message Reactions ---
+  socket.on('message-reaction', async ({ messageId, emoji }) => {
+    try {
+      const db = getDb();
+      const message = await db.collection('messages').findOne({ _id: new ObjectId(messageId) });
+      
+      if (message) {
+        // Add reaction to message
+        const reaction = {
+          userId: socket.userId,
+          userName: socket.userName,
+          emoji,
+          createdAt: new Date()
+        };
+        
+        await db.collection('messages').updateOne(
+          { _id: new ObjectId(messageId) },
+          { $push: { reactions: reaction } }
+        );
+        
+        // Broadcast reaction to room
+        let roomId;
+        if (message.chatType === 'private' && message.recipientId) {
+          roomId = [message.authorId, message.recipientId].sort().join('-');
+        } else if (message.chatType === 'community') {
+          roomId = 'community';
+        } else if (message.chatType === 'admin') {
+          roomId = 'admin';
+        }
+        
+        if (roomId) {
+          io.to(roomId).emit('reaction-added', {
+            messageId,
+            emoji,
+            userId: socket.userId,
+            userName: socket.userName
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error adding reaction:', error);
+    }
+  });
+  
+  // --- Connection Events ---
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    console.log(`🔴 User disconnected: ${socket.id} | User: ${socket.userName} (${socket.userId})`);
+    
+    // Remove from online users
+    onlineUsers.delete(socket.userId);
+    userSockets.delete(socket.id);
+    
+    // Clear typing status from all rooms
+    for (const [roomId, typing] of typingUsers.entries()) {
+      const userTyping = Array.from(typing).find(t => t.userId === socket.userId);
+      if (userTyping) {
+        typing.delete(userTyping);
+        socket.to(roomId).emit('user-stopped-typing', { 
+          userId: socket.userId, 
+          chatId: roomId 
+        });
+      }
+    }
+    
+    // Broadcast user offline status
+    socket.broadcast.emit('user-offline', { userId: socket.userId });
+  });
+  
+  // --- Private Chat Support ---
+  socket.on('start-private-chat', (targetUserId) => {
+    const roomId = [socket.userId, targetUserId].sort().join('-');
+    socket.join(roomId);
+    
+    // Notify the target user if they're online
+    const targetUser = onlineUsers.get(targetUserId);
+    if (targetUser) {
+      io.to(targetUser.socketId).emit('private-chat-started', {
+        roomId,
+        initiatorId: socket.userId,
+        initiatorName: socket.userName
+      });
+    }
+    
+    console.log(`💬 Private chat started: ${roomId} | Participants: ${socket.userName}, Target: ${targetUserId}`);
   });
 });
 
 export const getIo = () => io;
+export const getOnlineUsers = () => onlineUsers;
 
 
 // -----------------------------------------------------------------------------

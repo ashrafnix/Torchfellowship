@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Button from '../components/ui/Button.tsx';
-import { ICONS } from '../constants.tsx';
+import Button from '../components/ui/Button';
+import { ICONS } from '../constants';
 
 const GivePage: React.FC = () => {
     const [selectedAmount, setSelectedAmount] = useState<number | string>(25000);
@@ -30,13 +30,12 @@ const GivePage: React.FC = () => {
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url('https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273116/Give_abwfjj.png')` }}
                 >
-                    <div className="absolute inset-0 bg-brand-dark/70 backdrop-blur-sm"></div>
                 </div>
                 <div className="container mx-auto px-4 relative z-10">
-                    <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold">
+                    <h1 className="text-5xl md:text-6xl font-serif font-extrabold tracking-tight text-brand-gold drop-shadow-lg">
                         Give
                     </h1>
-                    <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-brand-text-dark">
+                    <p className="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-white drop-shadow-md">
                         "Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver." - 2 Corinthians 9:7
                     </p>
                 </div>
