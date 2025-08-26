@@ -56,7 +56,7 @@ async function testMongoConnection() {
 // Test API endpoints availability
 async function testAPIEndpoints() {
     console.log('🌐 Testing API endpoints...');
-    const port = process.env.PORT || 8080;
+    const port = process.env.PORT || 5000;
     const baseUrl = `http://localhost:${port}`;
     
     try {

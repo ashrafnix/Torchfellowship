@@ -68,6 +68,11 @@ import { ObjectId } from 'mongodb';
 import AppError from './utils/AppError.js';
 import errorHandler from './middleware/errorHandler.js';
 
+// Initialize external services after environment variables are loaded
+import './controllers/cloudinary.controller.js'; // Load cloudinary controller
+
+// Import route modules
+
 import authRoutes from './api/auth.routes.js';
 import userRoutes from './api/users.routes.js';
 import teachingRoutes from './api/teaching.routes.js';
@@ -94,15 +99,32 @@ import torchKidsRoutes from './api/torchKids.routes.js';
 // -----------------------------------------------------------------------------
 // Express App Initialization
 // -----------------------------------------------------------------------------
+
+// CORS configuration - define before using in Socket.IO
+const corsOrigins = process.env.NODE_ENV === 'production' 
+  ? [
+      // Production origins - UPDATE THESE WITH YOUR ACTUAL DOMAINS
+      'https://torchfellowship.netlify.app',  // Replace with your actual Netlify domain
+      'https://torchfellowship.org',     // If you have a custom domain
+      // Add additional production domains as needed
+    ]
+  : [
+      // Development origins
+      'http://localhost:5173', 
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000'
+    ];
+
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: corsOrigins,
     credentials: true
   }
 });
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
 
 // Socket.IO connection handling with comprehensive real-time features
 
@@ -408,9 +430,9 @@ export const getOnlineUsers = () => onlineUsers;
 // -----------------------------------------------------------------------------
 app.use(helmet()); // Set security HTTP headers
 
-// Enable CORS with specific origins
+// Enable CORS with environment-specific origins
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: corsOrigins,
   credentials: true
 }));
 

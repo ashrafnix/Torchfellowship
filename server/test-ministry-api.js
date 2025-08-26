@@ -75,7 +75,7 @@ async function testMinistryTeamsAPI() {
     console.error('❌ Test failed with error:', error.message);
     console.log('');
     console.log('🔍 Troubleshooting:');
-    console.log('   - Is the server running on port 8080?');
+    console.log('   - Is the server running on port 5000?');
     console.log('   - Run: cd server && npm run dev');
     console.log('   - Check for any server startup errors');
   }

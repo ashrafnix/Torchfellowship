@@ -88,7 +88,7 @@ async function checkServerEnvVariables() {
   ];
   
   const optionalVars = [
-    { name: 'PORT', desc: 'Server port', default: '8080' },
+    { name: 'PORT', desc: 'Server port', default: '5000' },
     { name: 'DB_NAME', desc: 'Database name', default: 'torch-fellowship' },
     { name: 'GEMINI_API_KEY', desc: 'Google Gemini API key for AI assistant' },
     { name: 'CLOUDINARY_CLOUD_NAME', desc: 'Cloudinary cloud name' },
