@@ -33,3 +33,17 @@ server/.env.production.local
 *.njsproj
 *.sln
 *.sw?
+
+# Next.js
+.next
+out
+build
+next-env.d.ts
+
+# Vercel
+.vercel
+
+# Firebase
+.firebase
+firebase-debug.log
+firebase-debug.*.log
