@@ -65,7 +65,7 @@ const GivePage: React.FC = () => {
                                             <button 
                                                 key={amount} 
                                                 onClick={() => handlePresetSelect(amount)}
-                                                className={`px-4 py-3 rounded-md text-center font-semibold transition-all duration-200 ${selectedAmount === amount ? 'bg-brand-gold text-brand-dark ring-2 ring-brand-gold' : 'bg-brand-muted text-brand-text hover:bg-opacity-75'}`}
+                                                className={`px-4 py-3 rounded-lg text-center font-bold transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer ${selectedAmount === amount ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-brand-dark shadow-[0_4px_15px_rgba(249,115,22,0.25)] scale-[1.03]' : 'bg-brand-muted text-brand-text hover:bg-white/10'}`}
                                             >
                                                 {amount.toLocaleString()}
                                             </button>

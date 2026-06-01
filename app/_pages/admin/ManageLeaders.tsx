@@ -144,7 +144,7 @@ const ManageLeaders: React.FC = () => {
                     <div className="flex items-center space-x-4">
                         <div className="relative">
                            <img src={photoPreview || 'https://via.placeholder.com/100x100.png/2B2F36/EAEAEA?text=Photo'} alt="Preview" className="w-24 h-24 rounded-full object-cover"/>
-                           <label htmlFor="photo-upload" className="absolute -bottom-1 -right-1 bg-brand-gold text-brand-dark p-1.5 rounded-full cursor-pointer hover:bg-brand-gold-dark transition-colors">
+                           <label htmlFor="photo-upload" className="absolute -bottom-1 -right-1 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-brand-dark p-1.5 rounded-full cursor-pointer hover:scale-110 active:scale-95 transition-all duration-300 shadow-md">
                                 <ICONS.Edit className="w-4 h-4" />
                                 <input 
                                     id="photo-upload" 

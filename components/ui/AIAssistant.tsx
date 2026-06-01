@@ -56,7 +56,7 @@ const AIAssistant: React.FC = () => {
             <div className="fixed bottom-5 right-5 z-40">
                 <button
                     onClick={toggleOpen}
-                    className="bg-brand-gold text-brand-dark rounded-full p-4 shadow-lg hover:bg-brand-gold-dark transition-transform transform hover:scale-110"
+                    className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:via-amber-600 hover:to-yellow-400 text-brand-dark rounded-full p-4 shadow-[0_4px_25px_rgba(249,115,22,0.35)] hover:shadow-[0_4px_35px_rgba(249,115,22,0.55)] transition-all duration-300 transform hover:scale-110 cursor-pointer"
                     aria-label="Toggle AI Assistant"
                 >
                     <ICONS.MessageSquare className="h-8 w-8" />
@@ -74,7 +74,7 @@ const AIAssistant: React.FC = () => {
                         <div className="flex flex-col space-y-4">
                             {messages.map((msg) => (
                                 <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                                    <div className={`max-w-xs rounded-lg px-4 py-2 ${msg.sender === 'user' ? 'bg-brand-gold text-brand-dark rounded-br-none' : 'bg-brand-muted text-white rounded-bl-none'}`}>
+                                    <div className={`max-w-xs rounded-lg px-4 py-2 ${msg.sender === 'user' ? 'bg-gradient-to-br from-orange-500/20 via-amber-500/15 to-yellow-500/10 border border-orange-500/30 text-white rounded-br-none' : 'bg-brand-muted text-white rounded-bl-none'}`}>
                                         <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                                     </div>
                                     {msg.timestamp && <span className="text-xs text-brand-text-dark mt-1">{msg.timestamp}</span>}

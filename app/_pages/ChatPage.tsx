@@ -536,7 +536,7 @@ const ChatPage: React.FC = () => {
           {showScrollToBottom && (
             <button
               onClick={() => scrollToBottom('smooth')}
-              className="absolute bottom-20 right-6 w-10 h-10 bg-brand-gold text-brand-dark rounded-full shadow-lg flex items-center justify-center hover:bg-yellow-400 transition-colors z-10"
+              className="absolute bottom-20 right-6 w-10 h-10 bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500 text-brand-dark rounded-full shadow-lg flex items-center justify-center hover:scale-115 active:scale-95 transition-all duration-300 z-10 cursor-pointer"
             >
               <ICONS.ChevronDown className="w-5 h-5" />
             </button>
@@ -594,7 +594,7 @@ const ChatPage: React.FC = () => {
             <button
               onClick={handleSend}
               disabled={!input.trim() || sending}
-              className="w-9 h-9 bg-brand-gold rounded-full flex items-center justify-center text-brand-dark hover:bg-yellow-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+              className="w-9 h-9 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-brand-dark rounded-full flex items-center justify-center hover:scale-110 active:scale-90 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none flex-shrink-0 cursor-pointer"
             >
               {sending ? <Spinner /> : <ICONS.Send className="w-4 h-4" />}
             </button>

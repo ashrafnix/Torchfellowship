@@ -129,7 +129,7 @@ const EventCard: React.FC<EventCardProps> = React.memo(({ event, priority = 'sta
           </Link>
           {event.registration_required && (
             <button 
-              className="bg-brand-gold text-brand-dark px-4 py-2 rounded-md text-sm font-semibold hover:bg-brand-gold/90 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-gold/50 focus:ring-offset-2"
+              className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:via-amber-600 hover:to-yellow-400 text-brand-dark font-black px-5 py-2 rounded-lg text-sm shadow-[0_4px_20px_rgba(249,115,22,0.25)] hover:shadow-[0_4px_30px_rgba(249,115,22,0.45)] transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 cursor-pointer"
               aria-label={`Register for ${event.title}`}
               onClick={() => {
                 // In a real implementation, this would open a registration modal or redirect
@@ -221,7 +221,7 @@ const UpcomingEventsSection: React.FC = () => {
           </p>
           <Link 
             href="/events" 
-            className="inline-block bg-brand-gold text-brand-dark px-6 py-2 rounded-md font-semibold hover:bg-brand-gold/90 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-gold/50 focus:ring-offset-2"
+            className="inline-block bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:via-amber-600 hover:to-yellow-400 text-brand-dark font-black px-6 py-2.5 rounded-lg shadow-[0_4px_20px_rgba(249,115,22,0.25)] hover:shadow-[0_4px_30px_rgba(249,115,22,0.45)] transition-all duration-300 transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
             aria-label="View all events page"
           >
             View All Events

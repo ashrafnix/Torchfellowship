@@ -21,6 +21,10 @@ export async function GET(req: NextRequest) {
       volunteerSnap,
       campusSnap,
       contactSnap,
+      leadersSnap,
+      campusesPendingSnap,
+      campusesApprovedSnap,
+      campusesRejectedSnap,
     ] = await Promise.all([
       adminDb.collection('users').count().get(),
       adminDb.collection('teachings').count().get(),
@@ -32,6 +36,10 @@ export async function GET(req: NextRequest) {
       adminDb.collection('volunteers').count().get(),
       adminDb.collection('light_campuses').count().get(),
       adminDb.collection('contact_messages').count().get(),
+      adminDb.collection('leaders').count().get(),
+      adminDb.collection('light_campus_applications').where('status', '==', 'Pending').count().get(),
+      adminDb.collection('light_campus_applications').where('status', '==', 'Approved').count().get(),
+      adminDb.collection('light_campus_applications').where('status', '==', 'Rejected').count().get(),
     ]);
 
     // Get recent users (last 5)
@@ -57,6 +65,13 @@ export async function GET(req: NextRequest) {
         totalVolunteers: volunteerSnap.data().count,
         totalCampuses: campusSnap.data().count,
         totalContactMessages: contactSnap.data().count,
+        totalLeaders: leadersSnap.data().count,
+        campusApplications: {
+          pending: campusesPendingSnap.data().count,
+          approved: campusesApprovedSnap.data().count,
+          rejected: campusesRejectedSnap.data().count,
+          total: campusesPendingSnap.data().count + campusesApprovedSnap.data().count + campusesRejectedSnap.data().count,
+        },
       },
       recentUsers,
     });

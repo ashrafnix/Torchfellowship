@@ -35,7 +35,7 @@ const Button = <C extends React.ElementType = 'button'>({
   const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-dark transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none';
 
   const variantStyles = {
-    primary: 'bg-brand-gold text-brand-dark hover:bg-brand-gold-dark focus:ring-brand-gold border border-amber-500/50 hover:shadow-[0_0_35px_-10px_theme(colors.brand-gold.dark)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]',
+    primary: 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:via-amber-600 hover:to-yellow-400 focus:ring-orange-500 text-brand-dark font-black border border-orange-400/20 shadow-[0_4px_25px_rgba(249,115,22,0.25)] hover:shadow-[0_4px_35px_rgba(249,115,22,0.45)]',
     secondary: 'bg-brand-surface text-brand-text hover:bg-brand-muted focus:ring-brand-text border border-brand-muted',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 border border-red-700/50',
     ghost: 'bg-transparent text-brand-text hover:bg-brand-surface focus:ring-brand-gold shadow-none',
