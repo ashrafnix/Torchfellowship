@@ -2,8 +2,10 @@
 // Works identically to original src/services/uploadService.ts
 // The only change: endpoint is now a relative path to the Next.js API route
 
+import { getCookie } from '@/lib/cookies';
+
 export const uploadImage = async (file: File, folder: string): Promise<string> => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || getCookie('token')) : null;
   if (!token) throw new Error('You must be logged in to upload images.');
 
   // Step 1: Get signature from our Next.js API route (replaces Express /api/cloudinary/signature)

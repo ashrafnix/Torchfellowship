@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getCookie } from '@/lib/cookies';
 
 const API_TIMEOUT_MS = 12_000;
 
@@ -17,10 +18,10 @@ export const useApi = () => {
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
 
       // On page refresh, state token might be null for a split second before
-      // AuthContext populates it. Fallback to localStorage to prevent premature
+      // AuthContext populates it. Fallback to localStorage/cookies to prevent premature
       // 401s that nuke the session.
       const activeToken =
-        token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+        token || (typeof window !== 'undefined' ? (localStorage.getItem('token') || getCookie('token')) : null);
       if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
       const config: RequestInit = { method, headers };

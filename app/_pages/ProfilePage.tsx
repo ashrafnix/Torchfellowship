@@ -7,6 +7,7 @@ import { uploadImage } from '@/services/uploadService';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { getApiUrl } from '@/lib/api';
+import { getCookie } from '@/lib/cookies';
 
 const ProfilePage: React.FC = () => {
   const { user, reloadUser } = useAuth();
@@ -42,7 +43,7 @@ const ProfilePage: React.FC = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token') || getCookie('token')}`
         },
         body: JSON.stringify(payload)
       });

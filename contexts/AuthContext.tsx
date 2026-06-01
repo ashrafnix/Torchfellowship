@@ -5,6 +5,7 @@ import { User, UserRole } from '@/lib/types';
 import { toast } from 'react-toastify';
 import { signInWithCustomToken, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth as firebaseAuth } from '@/lib/firebase/client';
+import { getCookie, setCookie, deleteCookie } from '@/lib/cookies';
 
 interface AuthContextType {
   user: User | null;
@@ -45,15 +46,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const clearAuth = useCallback(() => {
     if (typeof window !== 'undefined') localStorage.removeItem('token');
+    deleteCookie('token');
     setToken(null);
     setUser(null);
     setIsAdminState(false);
   }, []);
 
   const loadUserFromToken = useCallback(async () => {
-    const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const storedToken = typeof window !== 'undefined'
+      ? (localStorage.getItem('token') || getCookie('token'))
+      : null;
 
     if (storedToken) {
+      // Ensure they stay in sync
+      if (typeof window !== 'undefined' && !localStorage.getItem('token')) {
+        localStorage.setItem('token', storedToken);
+      }
+      setCookie('token', storedToken, 30);
+
       // Client-side expiry check — avoids a pointless round trip
       if (isTokenExpired(storedToken)) {
         clearAuth();
@@ -114,6 +124,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const { token: newToken, firebaseToken, user: userData } = await res.json();
     localStorage.setItem('token', newToken);
+    setCookie('token', newToken, 30);
     setToken(newToken);
     setUser(userData);
     setIsAdminState(userData.role === UserRole.ADMIN || userData.role === UserRole.SUPER_ADMIN);

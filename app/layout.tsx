@@ -15,10 +15,16 @@ export const metadata: Metadata = {
     description: 'A community of faith, love, and purpose',
     type: 'website',
   },
+  icons: {
+    icon: 'https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273222/Torch-logo_ithw3f.png',
+    shortcut: 'https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273222/Torch-logo_ithw3f.png',
+    apple: 'https://res.cloudinary.com/dn2mbmhmi/image/upload/v1755273222/Torch-logo_ithw3f.png',
+  },
 };
 
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import CookieConsent from '@/components/layout/CookieConsent';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -30,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <Footer />
+          <CookieConsent />
         </Providers>
       </body>
     </html>
