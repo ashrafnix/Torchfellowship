@@ -148,6 +148,7 @@ const AdminDashboard: React.FC = () => {
     { name: 'Manage Content', path: '/admin/content', icon: <ICONS.FileText className="h-10 w-10 text-brand-text-dark group-hover:text-brand-gold transition-colors" /> },
     { name: 'Admin Chat', path: '/chat', icon: <ICONS.MessageSquare className="h-10 w-10 text-brand-text-dark group-hover:text-brand-gold transition-colors" /> },
     { name: 'Manage New Converts', path: '/admin/new-converts', icon: <ICONS.Users className="h-10 w-10 text-brand-text-dark group-hover:text-brand-gold transition-colors" /> },
+    { name: 'Manage Tuesday Fellowship', path: '/admin/tuesday-fellowship', icon: <ICONS.Users className="h-10 w-10 text-brand-text-dark group-hover:text-brand-gold transition-colors" /> },
   ];
 
   if (isLoading) {

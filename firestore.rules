@@ -98,6 +98,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /tuesday_fellowship_registrations/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
     // ── Default: deny everything else ────────────────────────────
     match /{document=**} {
       allow read, write: if false;
