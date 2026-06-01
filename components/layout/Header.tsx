@@ -84,7 +84,12 @@ const Header: React.FC = () => {
     const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [mobileSearchQuery, setMobileSearchQuery] = useState('');
     const [activeSection, setActiveSection] = useState<'main' | 'about' | 'community' | 'getInvolved'>('main');
+    const [avatarError, setAvatarError] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        setAvatarError(false);
+    }, [user]);
 
     const activeLinkClass = 'text-brand-gold';
     const inactiveLinkClass = 'text-brand-text-dark hover:text-brand-gold';
@@ -154,9 +159,25 @@ const Header: React.FC = () => {
 
                         <div className="flex items-center space-x-4">
                             <div className="relative" ref={profileRef}>
-                                <button onClick={() => setProfileOpen(!isProfileOpen)} className="p-1.5 bg-brand-surface rounded-full text-brand-text-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-dark focus:ring-brand-gold">
+                                <button 
+                                    onClick={() => setProfileOpen(!isProfileOpen)} 
+                                    className="h-10 w-10 rounded-full bg-brand-surface hover:bg-brand-muted border border-white/10 hover:border-brand-gold/30 transition-all duration-300 flex items-center justify-center overflow-hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-dark focus:ring-brand-gold cursor-pointer"
+                                >
                                     <span className="sr-only">View profile</span>
-                                    {user?.avatarUrl ? <img src={user.avatarUrl} alt="profile" className="h-7 w-7 rounded-full object-cover" /> : <ICONS.User className="h-7 w-7"/>}
+                                    {user?.avatarUrl && !avatarError ? (
+                                        <img 
+                                            src={user.avatarUrl} 
+                                            alt="profile" 
+                                            className="h-full w-full object-cover" 
+                                            onError={() => setAvatarError(true)}
+                                        />
+                                    ) : user ? (
+                                        <div className="h-full w-full bg-gradient-to-br from-brand-gold to-yellow-500 flex items-center justify-center text-brand-dark font-bold text-sm select-none">
+                                            {user.fullName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase() || 'U'}
+                                        </div>
+                                    ) : (
+                                        <ICONS.User className="h-5 w-5 text-brand-text-dark" />
+                                    )}
                                 </button>
                                 {isProfileOpen && (
                                     <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg py-1 bg-brand-surface ring-1 ring-black ring-opacity-5 focus:outline-none animate-fadeInDropdown">
@@ -218,16 +239,17 @@ const Header: React.FC = () => {
                         <div className="p-4 border-b border-brand-muted/30">
                             <div className="flex items-center space-x-3 mb-3">
                                 <div className="relative">
-                                    {user?.avatarUrl ? (
+                                    {user?.avatarUrl && !avatarError ? (
                                         <img 
                                             src={user.avatarUrl} 
                                             alt="profile" 
                                             className="h-12 w-12 rounded-full object-cover border-2 border-brand-gold/30" 
+                                            onError={() => setAvatarError(true)}
                                         />
                                     ) : (
-                                        <div className="h-12 w-12 bg-gradient-to-br from-brand-gold to-yellow-500 rounded-full flex items-center justify-center">
-                                            <span className="text-brand-dark font-bold text-lg">
-                                                {user.fullName?.charAt(0).toUpperCase() || 'U'}
+                                        <div className="h-12 w-12 bg-gradient-to-br from-brand-gold to-yellow-500 rounded-full flex items-center justify-center border-2 border-brand-gold/30">
+                                            <span className="text-brand-dark font-black text-lg select-none">
+                                                {user.fullName?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase() || 'U'}
                                             </span>
                                         </div>
                                     )}

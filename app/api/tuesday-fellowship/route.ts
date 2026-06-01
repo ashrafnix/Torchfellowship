@@ -27,18 +27,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, contact, isFirstTimeVisitor, wishesToVolunteer, placeOfResidence } = body;
+    const { name, email, contact, isFirstTimeVisitor, wishesToVolunteer, placeOfResidence } = body;
 
     // Basic validation
-    if (!name || !contact || !placeOfResidence) {
+    if (!name || !email || !contact || !placeOfResidence) {
       return NextResponse.json(
-        { message: 'Name, contact, and place of residence are required.' },
+        { message: 'Name, email, contact, and place of residence are required.' },
         { status: 400 }
       );
     }
 
     const docRef = await adminDb.collection('tuesday_fellowship_registrations').add({
       name,
+      email,
       contact,
       isFirstTimeVisitor: Boolean(isFirstTimeVisitor),
       wishesToVolunteer: Boolean(wishesToVolunteer),

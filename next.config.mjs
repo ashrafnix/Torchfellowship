@@ -17,6 +17,10 @@ const nextConfig = {
     ],
   },
   serverExternalPackages: ['firebase-admin'],
+  turbopack: {
+    root: process.cwd().replace(/\\/g, '/'),
+  },
 };
 
 export default nextConfig;
+

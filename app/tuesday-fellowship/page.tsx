@@ -10,6 +10,7 @@ export default function TuesdayFellowshipRegistration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
     contact: '',
     isFirstTimeVisitor: '',
     wishesToVolunteer: '',
@@ -28,7 +29,7 @@ export default function TuesdayFellowshipRegistration() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.contact || !formData.placeOfResidence) {
+    if (!formData.name || !formData.email || !formData.contact || !formData.placeOfResidence) {
       toast.error('Please fill in all required text fields.');
       return;
     }
@@ -43,6 +44,7 @@ export default function TuesdayFellowshipRegistration() {
       toast.success('Registration successful! We look forward to seeing you.');
       setFormData({
         name: '',
+        email: '',
         contact: '',
         isFirstTimeVisitor: '',
         wishesToVolunteer: '',
@@ -123,6 +125,28 @@ export default function TuesdayFellowshipRegistration() {
                   onChange={handleChange}
                   required
                   placeholder="Enter your full name"
+                  className="block w-full pl-12 pr-4 py-3.5 bg-black/40 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400/80 transition-all outline-none shadow-inner text-sm sm:text-base font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Input Group: Email */}
+            <div className="space-y-2 group">
+              <label htmlFor="email" className="block text-xs font-bold text-gray-400 tracking-widest uppercase group-focus-within:text-orange-400 transition-colors">
+                Email Address <span className="text-orange-500 font-serif">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <ICONS.Mail className="h-5 w-5 text-gray-500 group-focus-within:text-orange-400 transition-colors" />
+                </div>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter your email address"
                   className="block w-full pl-12 pr-4 py-3.5 bg-black/40 border border-white/10 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400/80 transition-all outline-none shadow-inner text-sm sm:text-base font-medium"
                 />
               </div>

@@ -9,6 +9,7 @@ import { useApi } from '@/hooks/useApi';
 interface Registration {
   id: string;
   name: string;
+  email: string;
   contact: string;
   isFirstTimeVisitor: boolean;
   wishesToVolunteer: boolean;
@@ -77,6 +78,7 @@ const ManageTuesdayFellowship: React.FC = () => {
                                     <tr className="border-b border-gray-700/50">
                                         <th className="py-3 px-4 font-semibold text-gray-400">Date</th>
                                         <th className="py-3 px-4 font-semibold text-gray-400">Name</th>
+                                        <th className="py-3 px-4 font-semibold text-gray-400">Email</th>
                                         <th className="py-3 px-4 font-semibold text-gray-400">Contact</th>
                                         <th className="py-3 px-4 font-semibold text-gray-400">Location</th>
                                         <th className="py-3 px-4 font-semibold text-gray-400 text-center">First Time</th>
@@ -90,6 +92,7 @@ const ManageTuesdayFellowship: React.FC = () => {
                                                 {new Date(reg.createdAt).toLocaleDateString()}
                                             </td>
                                             <td className="py-3 px-4 font-medium text-white">{reg.name}</td>
+                                            <td className="py-3 px-4 text-sm text-gray-300">{reg.email || 'N/A'}</td>
                                             <td className="py-3 px-4 text-sm text-gray-300">{reg.contact}</td>
                                             <td className="py-3 px-4 text-sm text-gray-300">{reg.placeOfResidence}</td>
                                             <td className="py-3 px-4 text-center">

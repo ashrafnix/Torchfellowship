@@ -19,7 +19,12 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const mobileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user]);
 
   // Close mobile drawer when route changes
   useEffect(() => {
@@ -206,8 +211,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {/* Sidebar Footer (Admin Profile) */}
         <div className="p-4 border-t border-brand-muted/30 bg-brand-dark/35 flex items-center gap-3">
           <img
-            src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.email)}&background=2B2F36&color=EAEAEA&size=64`}
+            src={(!avatarError && user.avatarUrl) ? user.avatarUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.email)}&background=2B2F36&color=EAEAEA&size=64`}
             alt={user.fullName || user.email}
+            onError={() => setAvatarError(true)}
             className="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0 shadow-md"
           />
           <div className="min-w-0 flex-1">
@@ -287,8 +293,9 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             {/* Profile footer */}
             <div className="p-4 border-t border-brand-muted/30 bg-brand-dark/35 flex items-center gap-3">
               <img
-                src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.email)}&background=2B2F36&color=EAEAEA&size=64`}
+                src={(!avatarError && user.avatarUrl) ? user.avatarUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.email)}&background=2B2F36&color=EAEAEA&size=64`}
                 alt={user.fullName || user.email}
+                onError={() => setAvatarError(true)}
                 className="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0"
               />
               <div className="min-w-0 flex-1">
